@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdlib.h>
+#include <cv.h>
+#include <highgui.h>
 
 namespace BADVideo {
 
@@ -10,12 +12,16 @@ namespace BADVideo {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+  using namespace System::Runtime::InteropServices;
 
 	/// <summary>
 	/// Summary for Form1
 	/// </summary>
 	public ref class Form1 : public System::Windows::Forms::Form
 	{
+    private:
+      String^ videoFileName;
+
 	  public:
 		  Form1(void)
 		  {
@@ -106,6 +112,7 @@ namespace BADVideo {
         this->PreviewImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
         this->PreviewImageButton->TabIndex = 2;
         this->PreviewImageButton->TabStop = false;
+        this->PreviewImageButton->Click += gcnew System::EventHandler(this, &Form1::PreviewImageButton_Click);
         // 
         // PreviewLabel
         // 
@@ -199,6 +206,9 @@ namespace BADVideo {
 
 			
 	  private:
+      System::Void Form1_Load(System::Object^  sender, System::EventArgs^  e) {}
+
+
       ///<summary>
       ///On click of EXIT icon, exit the program.
       ///</summary>
@@ -206,16 +216,51 @@ namespace BADVideo {
         exit(0);
 			}
 
+
       ///<summary>
       ///On click of OPEN icon, open the avi file select dialog
       ///</summary>
       System::Void OpenImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
         if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-          ;
+          videoFileName = openFileDialog1->FileName;
+          //TODO: strip off directory prefix of filename
+          OpenLabel->Text = videoFileName;
         }
       }
 
 
-      System::Void Form1_Load(System::Object^  sender, System::EventArgs^  e) {}
+      ///<summary>
+      ///On click of PREVIEW icon, play the original video along side an
+      ///enhanced version of the original.
+      ///</summary>
+      System::Void PreviewImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //convert String^ to char* for opencv
+        const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
+        //create a viewing window for the original video
+        cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
+
+        CvCapture* videoCapture = cvCreateFileCapture(fileName);
+        IplImage* frame;  //holds each frame in the video
+
+        //play the video
+        while(1) {
+          //grab next frame
+          frame = cvQueryFrame(videoCapture);
+          //end of video
+          if (!frame)
+            break;
+          //display the frame
+          cvShowImage("Original", frame);
+          //check for keystroke at each frame (assuming frames per second (fps) is 30)
+          char c = cvWaitKey(33);
+          //stop playback if user hit 'ESC'
+          if (c == 27)
+            break;
+        }
+
+        //free allocated memory used by opencv
+        cvReleaseCapture(&videoCapture);
+        cvDestroyWindow("Original");
+      }
   };
 }
