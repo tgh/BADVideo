@@ -31,7 +31,8 @@ ideas found in two notable research papers:
 ----------------
  LANGUAGE/TOOLS 
 ----------------
-BADVideo is written in C++/CLI with the OpenCV library using Visual Studio 2010. 
+BADVideo is written in C++/CLI with the OpenCV library using Visual Studio 2010.
+Source code kept under revision control using Git.
 
 
 
