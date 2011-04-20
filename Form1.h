@@ -21,26 +21,27 @@ namespace BADVideo {
 	{
     private:
       String^ videoFileName;
+      IplImage* newVideoFrames;
 
 	  public:
-		  Form1(void)
-		  {
+		  Form1(void) {
 			  InitializeComponent();
-			  //
-			  //TODO: Add the constructor code here
-			  //
+			  videoFileName = nullptr;
+        newVideoFrames = nullptr;
 		  }
 
 	  protected:
 		  /// <summary>
 		  /// Clean up any resources being used.
 		  /// </summary>
-		  ~Form1()
-		  {
-			  if (components)
-			  {
+		  ~Form1() {
+			  if (components) {
 				  delete components;
 			  }
+
+        if (newVideoFrames) {
+          delete newVideoFrames;
+        }
 		  }
 	  private: System::Windows::Forms::PictureBox^  SaveImageButton;
 	  protected: 
@@ -222,9 +223,23 @@ namespace BADVideo {
       ///</summary>
       System::Void OpenImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
         if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+          //save the filename
           videoFileName = openFileDialog1->FileName;
           //TODO: strip off directory prefix of filename
           OpenLabel->Text = videoFileName;
+          //convert String^ to char* for opencv
+          const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
+
+          CvCapture* videoCapture = cvCreateFileCapture(fileName);
+          //get the number of frames for the video
+          // (subtract 1, because it seems the last frame is null, but is
+          // included in the frame count)
+          int frames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
+          newVideoFrames = new IplImage[frames];
+          //store the frames of the video for later use
+          for (int i=0; i < frames; ++i) {
+            newVideoFrames[i] = *(cvQueryFrame(videoCapture));
+          }
         }
       }
 
