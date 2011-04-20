@@ -23,13 +23,21 @@ namespace BADVideo {
       String^ videoFileName;
   private: System::Windows::Forms::PictureBox^  EnhanceImageButton;
   private: System::Windows::Forms::Label^  EnhanceLabel;
-           IplImage* newVideoFrames;
+           IplImage** newVideoFrames;
+           double fps;
+           int videoWidth;
+           int videoHeight;
+           int numFrames;
 
 	  public:
 		  Form1(void) {
 			  InitializeComponent();
 			  videoFileName = nullptr;
         newVideoFrames = nullptr;
+        fps = 0.0;
+        videoWidth = 0;
+        videoHeight = 0;
+        numFrames = 0;
 		  }
 
 	  protected:
@@ -97,6 +105,7 @@ namespace BADVideo {
         this->SaveImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
         this->SaveImageButton->TabIndex = 0;
         this->SaveImageButton->TabStop = false;
+        this->SaveImageButton->Click += gcnew System::EventHandler(this, &Form1::SaveImageButton_Click);
         // 
         // OpenLabel
         // 
@@ -263,14 +272,19 @@ namespace BADVideo {
           const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
 
           CvCapture* videoCapture = cvCreateFileCapture(fileName);
+          //get the frames per second (fps) of the video
+          fps = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FPS);
+          //get the size of the video
+          videoWidth  = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_WIDTH);
+          videoHeight = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_HEIGHT);
           //get the number of frames for the video
           // (subtract 1, because it seems the last frame is null, but is
           // included in the frame count)
-          int frames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
-          newVideoFrames = new IplImage[frames];
+          numFrames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
+          newVideoFrames = new IplImage*[numFrames];
           //store the frames of the video for later use
-          for (int i=0; i < frames; ++i) {
-            newVideoFrames[i] = *(cvQueryFrame(videoCapture));
+          for (int i=0; i < numFrames; ++i) {
+            newVideoFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
           }
         }
       }
@@ -318,6 +332,24 @@ namespace BADVideo {
       ///</summary>
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
       
+      }
+      
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of SAVE icon, the enhanced video is written out to a file.
+      ///</summary>
+      System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //create a CvSize structure to pass to cvCreateVideoWriter
+        CvSize videoSize = cvSize(videoWidth, videoHeight);
+        //the argument '0' is telling Windows to create a writer of uncompressed .avi files
+        CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
+        //write every frame
+        for (int i=0; i < numFrames; ++i) {
+          cvWriteFrame(writer, newVideoFrames[i]);
+        }
+        //cleanup
+        cvReleaseVideoWriter(&writer);
       }
   };
 }
