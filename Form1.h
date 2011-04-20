@@ -21,7 +21,9 @@ namespace BADVideo {
 	{
     private:
       String^ videoFileName;
-      IplImage* newVideoFrames;
+  private: System::Windows::Forms::PictureBox^  EnhanceImageButton;
+  private: System::Windows::Forms::Label^  EnhanceLabel;
+           IplImage* newVideoFrames;
 
 	  public:
 		  Form1(void) {
@@ -77,16 +79,19 @@ namespace BADVideo {
         this->exitImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->ExitLabel = (gcnew System::Windows::Forms::Label());
         this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
+        this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
+        this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->exitImageButton))->BeginInit();
+        (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->EnhanceImageButton))->BeginInit();
         this->SuspendLayout();
         // 
         // SaveImageButton
         // 
         this->SaveImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"SaveImageButton.Image")));
-        this->SaveImageButton->Location = System::Drawing::Point(12, 152);
+        this->SaveImageButton->Location = System::Drawing::Point(12, 222);
         this->SaveImageButton->Name = L"SaveImageButton";
         this->SaveImageButton->Size = System::Drawing::Size(64, 64);
         this->SaveImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -107,7 +112,7 @@ namespace BADVideo {
         // PreviewImageButton
         // 
         this->PreviewImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"PreviewImageButton.Image")));
-        this->PreviewImageButton->Location = System::Drawing::Point(12, 82);
+        this->PreviewImageButton->Location = System::Drawing::Point(12, 152);
         this->PreviewImageButton->Name = L"PreviewImageButton";
         this->PreviewImageButton->Size = System::Drawing::Size(64, 64);
         this->PreviewImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -120,11 +125,11 @@ namespace BADVideo {
         this->PreviewLabel->AutoSize = true;
         this->PreviewLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->PreviewLabel->Location = System::Drawing::Point(82, 102);
+        this->PreviewLabel->Location = System::Drawing::Point(82, 172);
         this->PreviewLabel->Name = L"PreviewLabel";
-        this->PreviewLabel->Size = System::Drawing::Size(87, 23);
+        this->PreviewLabel->Size = System::Drawing::Size(136, 23);
         this->PreviewLabel->TabIndex = 3;
-        this->PreviewLabel->Text = L"Preview...";
+        this->PreviewLabel->Text = L"Preview Result.";
         // 
         // OpenImageButton
         // 
@@ -142,7 +147,7 @@ namespace BADVideo {
         this->SaveLabel->AutoSize = true;
         this->SaveLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->SaveLabel->Location = System::Drawing::Point(82, 170);
+        this->SaveLabel->Location = System::Drawing::Point(82, 240);
         this->SaveLabel->Name = L"SaveLabel";
         this->SaveLabel->Size = System::Drawing::Size(145, 23);
         this->SaveLabel->TabIndex = 5;
@@ -151,7 +156,7 @@ namespace BADVideo {
         // exitImageButton
         // 
         this->exitImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"exitImageButton.Image")));
-        this->exitImageButton->Location = System::Drawing::Point(12, 222);
+        this->exitImageButton->Location = System::Drawing::Point(12, 292);
         this->exitImageButton->Name = L"exitImageButton";
         this->exitImageButton->Size = System::Drawing::Size(64, 64);
         this->exitImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -164,7 +169,7 @@ namespace BADVideo {
         this->ExitLabel->AutoSize = true;
         this->ExitLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->ExitLabel->Location = System::Drawing::Point(82, 241);
+        this->ExitLabel->Location = System::Drawing::Point(82, 318);
         this->ExitLabel->Name = L"ExitLabel";
         this->ExitLabel->Size = System::Drawing::Size(47, 23);
         this->ExitLabel->TabIndex = 7;
@@ -177,11 +182,35 @@ namespace BADVideo {
         this->openFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
         this->openFileDialog1->Title = L"Select an AVI file";
         // 
+        // EnhanceImageButton
+        // 
+        this->EnhanceImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"EnhanceImageButton.Image")));
+        this->EnhanceImageButton->Location = System::Drawing::Point(12, 82);
+        this->EnhanceImageButton->Name = L"EnhanceImageButton";
+        this->EnhanceImageButton->Size = System::Drawing::Size(64, 59);
+        this->EnhanceImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
+        this->EnhanceImageButton->TabIndex = 8;
+        this->EnhanceImageButton->TabStop = false;
+        this->EnhanceImageButton->Click += gcnew System::EventHandler(this, &Form1::EnhanceImageButton_Click);
+        // 
+        // EnhanceLabel
+        // 
+        this->EnhanceLabel->AutoSize = true;
+        this->EnhanceLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+          static_cast<System::Byte>(0)));
+        this->EnhanceLabel->Location = System::Drawing::Point(82, 99);
+        this->EnhanceLabel->Name = L"EnhanceLabel";
+        this->EnhanceLabel->Size = System::Drawing::Size(86, 23);
+        this->EnhanceLabel->TabIndex = 9;
+        this->EnhanceLabel->Text = L"Enhance.";
+        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-        this->ClientSize = System::Drawing::Size(284, 301);
+        this->ClientSize = System::Drawing::Size(284, 368);
+        this->Controls->Add(this->EnhanceLabel);
+        this->Controls->Add(this->EnhanceImageButton);
         this->Controls->Add(this->ExitLabel);
         this->Controls->Add(this->exitImageButton);
         this->Controls->Add(this->SaveLabel);
@@ -199,6 +228,7 @@ namespace BADVideo {
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->EndInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->EndInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->exitImageButton))->EndInit();
+        (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->EnhanceImageButton))->EndInit();
         this->ResumeLayout(false);
         this->PerformLayout();
 
@@ -209,6 +239,7 @@ namespace BADVideo {
 	  private:
       System::Void Form1_Load(System::Object^  sender, System::EventArgs^  e) {}
 
+      //----------------------------------------------------------------------
 
       ///<summary>
       ///On click of EXIT icon, exit the program.
@@ -217,6 +248,7 @@ namespace BADVideo {
         exit(0);
 			}
 
+      //----------------------------------------------------------------------
 
       ///<summary>
       ///On click of OPEN icon, open the avi file select dialog
@@ -243,6 +275,7 @@ namespace BADVideo {
         }
       }
 
+      //----------------------------------------------------------------------
 
       ///<summary>
       ///On click of PREVIEW icon, play the original video along side an
@@ -276,6 +309,15 @@ namespace BADVideo {
         //free allocated memory used by opencv
         cvReleaseCapture(&videoCapture);
         cvDestroyWindow("Original");
+      }
+
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of ENHANCE icon, process the stored video.
+      ///</summary>
+      System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+      
       }
   };
 }
