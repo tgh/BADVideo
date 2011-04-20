@@ -27,6 +27,7 @@ namespace BADVideo {
            double fps;
            int videoWidth;
            int videoHeight;
+  private: System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
            int numFrames;
 
 	  public:
@@ -89,6 +90,7 @@ namespace BADVideo {
         this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
         this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
+        this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -212,6 +214,12 @@ namespace BADVideo {
         this->EnhanceLabel->Size = System::Drawing::Size(86, 23);
         this->EnhanceLabel->TabIndex = 9;
         this->EnhanceLabel->Text = L"Enhance.";
+        // 
+        // saveFileDialog1
+        // 
+        this->saveFileDialog1->Filter = L"MPEG Files (*.mpg)|*.mpg";
+        this->saveFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
+        this->saveFileDialog1->Title = L"Save As...";
         // 
         // Form1
         // 
@@ -340,16 +348,18 @@ namespace BADVideo {
       ///On click of SAVE icon, the enhanced video is written out to a file.
       ///</summary>
       System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        //create a CvSize structure to pass to cvCreateVideoWriter
-        CvSize videoSize = cvSize(videoWidth, videoHeight);
-        //the argument '0' is telling Windows to create a writer of uncompressed .avi files
-        CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
-        //write every frame
-        for (int i=0; i < numFrames; ++i) {
-          cvWriteFrame(writer, newVideoFrames[i]);
+        if (saveFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+          //create a CvSize structure to pass to cvCreateVideoWriter
+          CvSize videoSize = cvSize(videoWidth, videoHeight);
+          //the argument '0' is telling Windows to create a writer of uncompressed .avi files
+          CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
+          //write every frame
+          for (int i=0; i < numFrames; ++i) {
+            cvWriteFrame(writer, newVideoFrames[i]);
+          }
+          //cleanup
+          cvReleaseVideoWriter(&writer);
         }
-        //cleanup
-        cvReleaseVideoWriter(&writer);
       }
   };
 }
