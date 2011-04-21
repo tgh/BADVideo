@@ -28,6 +28,7 @@ namespace BADVideo {
            int videoWidth;
            int videoHeight;
   private: System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
+  private: System::Windows::Forms::Label^  FilenameLabel;
            int numFrames;
 
 	  public:
@@ -91,6 +92,7 @@ namespace BADVideo {
         this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
+        this->FilenameLabel = (gcnew System::Windows::Forms::Label());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -116,9 +118,9 @@ namespace BADVideo {
           static_cast<System::Byte>(0)));
         this->OpenLabel->Location = System::Drawing::Point(82, 33);
         this->OpenLabel->Name = L"OpenLabel";
-        this->OpenLabel->Size = System::Drawing::Size(140, 23);
+        this->OpenLabel->Size = System::Drawing::Size(61, 23);
         this->OpenLabel->TabIndex = 1;
-        this->OpenLabel->Text = L"Open AVI File...";
+        this->OpenLabel->Text = L"Open.";
         // 
         // PreviewImageButton
         // 
@@ -138,9 +140,9 @@ namespace BADVideo {
           static_cast<System::Byte>(0)));
         this->PreviewLabel->Location = System::Drawing::Point(82, 172);
         this->PreviewLabel->Name = L"PreviewLabel";
-        this->PreviewLabel->Size = System::Drawing::Size(136, 23);
+        this->PreviewLabel->Size = System::Drawing::Size(77, 23);
         this->PreviewLabel->TabIndex = 3;
-        this->PreviewLabel->Text = L"Preview Result.";
+        this->PreviewLabel->Text = L"Preview.";
         // 
         // OpenImageButton
         // 
@@ -160,9 +162,9 @@ namespace BADVideo {
           static_cast<System::Byte>(0)));
         this->SaveLabel->Location = System::Drawing::Point(82, 240);
         this->SaveLabel->Name = L"SaveLabel";
-        this->SaveLabel->Size = System::Drawing::Size(145, 23);
+        this->SaveLabel->Size = System::Drawing::Size(52, 23);
         this->SaveLabel->TabIndex = 5;
-        this->SaveLabel->Text = L"Save Result As...";
+        this->SaveLabel->Text = L"Save.";
         // 
         // exitImageButton
         // 
@@ -221,11 +223,26 @@ namespace BADVideo {
         this->saveFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
         this->saveFileDialog1->Title = L"Save As...";
         // 
+        // FilenameLabel
+        // 
+        this->FilenameLabel->AutoSize = true;
+        this->FilenameLabel->Font = (gcnew System::Drawing::Font(L"Courier New", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+          static_cast<System::Byte>(0)));
+        this->FilenameLabel->ForeColor = System::Drawing::Color::Green;
+        this->FilenameLabel->Location = System::Drawing::Point(149, 40);
+        this->FilenameLabel->Name = L"FilenameLabel";
+        this->FilenameLabel->Size = System::Drawing::Size(56, 16);
+        this->FilenameLabel->TabIndex = 10;
+        this->FilenameLabel->Text = L"label1";
+        this->FilenameLabel->Visible = false;
+        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-        this->ClientSize = System::Drawing::Size(284, 368);
+        this->BackColor = System::Drawing::SystemColors::Window;
+        this->ClientSize = System::Drawing::Size(340, 368);
+        this->Controls->Add(this->FilenameLabel);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
         this->Controls->Add(this->ExitLabel);
@@ -272,10 +289,17 @@ namespace BADVideo {
       ///</summary>
       System::Void OpenImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
         if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-          //save the filename
+          //save the (full path) filename
           videoFileName = openFileDialog1->FileName;
-          //TODO: strip off directory prefix of filename
-          OpenLabel->Text = videoFileName;
+
+          //get the filename only (without the path)
+          int idx = videoFileName->LastIndexOf('\\');
+          String^ shortFileName = videoFileName->Substring(idx+1);
+
+          //show the filename in the form
+          FilenameLabel->Text = shortFileName;
+          FilenameLabel->Visible = true;
+
           //convert String^ to char* for opencv
           const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
 
