@@ -110,8 +110,7 @@ namespace BADVideo {
           String^ shortFileName = videoFileName->Substring(idx+1);
 
           //show the filename in the form
-          FilenameLabel->Text = shortFileName;
-          FilenameLabel->Visible = true;
+          this->Text = "BADVideo - " + shortFileName;
 
           //convert String^ to char* for opencv
           const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
@@ -181,6 +180,10 @@ namespace BADVideo {
           return;
         }
 
+        //show the progress bar for enhancing the video
+        progressBar1->Visible = true;
+        progressBar1->Maximum = numFrames*0.7;
+
         /* Debug
         FILE * fp = fopen("log.txt","w");
         fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData))));
@@ -202,7 +205,9 @@ namespace BADVideo {
               ptr[3*k+2] *= 0.5;
             }
           }
+          progressBar1->Increment(1);
         }
+        DoneLabel->Visible = true;
       }
       
       //----------------------------------------------------------------------
@@ -241,6 +246,8 @@ namespace BADVideo {
 		  /// </summary>
 		  System::ComponentModel::Container ^components;
 
+      System::Windows::Forms::ProgressBar^  progressBar1;
+      System::Windows::Forms::Label^  DoneLabel;
 	    System::Windows::Forms::PictureBox^  SaveImageButton;
 	    System::Windows::Forms::Label^  OpenLabel;
 	    System::Windows::Forms::PictureBox^  PreviewImageButton;
@@ -253,7 +260,7 @@ namespace BADVideo {
       System::Windows::Forms::PictureBox^  EnhanceImageButton;
       System::Windows::Forms::Label^  EnhanceLabel;
       System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
-      System::Windows::Forms::Label^  FilenameLabel;
+
 
 
 		  /// <summary>
@@ -275,7 +282,8 @@ namespace BADVideo {
         this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
-        this->FilenameLabel = (gcnew System::Windows::Forms::Label());
+        this->progressBar1 = (gcnew System::Windows::Forms::ProgressBar());
+        this->DoneLabel = (gcnew System::Windows::Forms::Label());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -406,18 +414,26 @@ namespace BADVideo {
         this->saveFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
         this->saveFileDialog1->Title = L"Save As...";
         // 
-        // FilenameLabel
+        // progressBar1
         // 
-        this->FilenameLabel->AutoSize = true;
-        this->FilenameLabel->Font = (gcnew System::Drawing::Font(L"Courier New", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+        this->progressBar1->Location = System::Drawing::Point(174, 99);
+        this->progressBar1->Name = L"progressBar1";
+        this->progressBar1->Size = System::Drawing::Size(154, 23);
+        this->progressBar1->TabIndex = 11;
+        this->progressBar1->Visible = false;
+        // 
+        // DoneLabel
+        // 
+        this->DoneLabel->AutoSize = true;
+        this->DoneLabel->Font = (gcnew System::Drawing::Font(L"Georgia", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->FilenameLabel->ForeColor = System::Drawing::Color::Green;
-        this->FilenameLabel->Location = System::Drawing::Point(149, 40);
-        this->FilenameLabel->Name = L"FilenameLabel";
-        this->FilenameLabel->Size = System::Drawing::Size(56, 16);
-        this->FilenameLabel->TabIndex = 10;
-        this->FilenameLabel->Text = L"label1";
-        this->FilenameLabel->Visible = false;
+        this->DoneLabel->ForeColor = System::Drawing::Color::Green;
+        this->DoneLabel->Location = System::Drawing::Point(171, 125);
+        this->DoneLabel->Name = L"DoneLabel";
+        this->DoneLabel->Size = System::Drawing::Size(43, 14);
+        this->DoneLabel->TabIndex = 12;
+        this->DoneLabel->Text = L"Done.";
+        this->DoneLabel->Visible = false;
         // 
         // Form1
         // 
@@ -425,7 +441,8 @@ namespace BADVideo {
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
         this->BackColor = System::Drawing::SystemColors::Control;
         this->ClientSize = System::Drawing::Size(340, 368);
-        this->Controls->Add(this->FilenameLabel);
+        this->Controls->Add(this->DoneLabel);
+        this->Controls->Add(this->progressBar1);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
         this->Controls->Add(this->ExitLabel);
