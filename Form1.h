@@ -140,12 +140,15 @@ namespace BADVideo {
       ///enhanced version of the original.
       ///</summary>
       System::Void PreviewImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        //convert String^ to char* for opencv
+        //convert String^ to char* for the original video filename (for opencv)
         const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
-        //create a viewing window for the original video
+
+        //create viewing windows for the original and enhanced videos
         cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
-        //create a viewing window for the enhanced video
         cvNamedWindow("Enhanced", CV_WINDOW_AUTOSIZE);
+        //position the windows side-by-side
+        cvMoveWindow("Original", this->Location.X + this->Size.Width + 10, this->Location.Y);
+        cvMoveWindow("Enhanced", this->Location.X + this->Size.Width + newVideoFrames[0]->width + 20, this->Location.Y);
 
         //capture object for the original video
         CvCapture* videoCapture = cvCreateFileCapture(fileName);
@@ -461,8 +464,10 @@ namespace BADVideo {
         this->Controls->Add(this->OpenLabel);
         this->Controls->Add(this->SaveImageButton);
         this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::Fixed3D;
+        this->Location = System::Drawing::Point(5, 5);
         this->MaximizeBox = false;
         this->Name = L"Form1";
+        this->StartPosition = System::Windows::Forms::FormStartPosition::Manual;
         this->Text = L"BADVideo";
         this->Load += gcnew System::EventHandler(this, &Form1::Form1_Load);
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->EndInit();
