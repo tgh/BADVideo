@@ -43,7 +43,7 @@ namespace BADVideo {
       ///height of video (in pixels)
       int videoHeight;
 
-      ///the total number of frames in the video
+      ///total number of frames in the video (also length of the frame array)
       int numFrames;
 
     //----------------------------------------------------------------------
@@ -176,7 +176,34 @@ namespace BADVideo {
       ///On click of ENHANCE icon, process the stored video.
       ///</summary>
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-      
+        if (newVideoFrames[0]->nChannels != 3) {
+          MessageBox::Show("This is not a 3-channel video, as was expected.  I can't help you.", "Sorry.");
+          return;
+        }
+
+        /* Debug
+        FILE * fp = fopen("log.txt","w");
+        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData))));
+        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData+1))));
+        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData+2))));
+        fclose(fp);
+        */
+
+
+        for(int i=0; i < numFrames; ++i) {
+          IplImage* curFrame = newVideoFrames[i];
+          int width = curFrame->width;
+          int height = curFrame->height;
+          int step = curFrame->widthStep;
+          for (int j=0; j < height; ++j) {
+            uchar* ptr = (uchar*) (curFrame->imageData + j * step);
+            for (int k=0; k < width; ++k) {
+              ptr[3*k] *= 0.5;
+              ptr[3*k+1] *= 0.5;
+              ptr[3*k+2] *= 0.5;
+            }
+          }
+        }
       }
       
       //----------------------------------------------------------------------
