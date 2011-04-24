@@ -185,6 +185,9 @@ namespace BADVideo {
       ///On click of ENHANCE icon, process the stored video.
       ///</summary>
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //unshow the "Done." label (if already showing)
+        DoneLabel->Visible = false;
+        //assertion failed: video does not have 3 channels
         if (newVideoFrames[0]->nChannels != 3) {
           MessageBox::Show("This is not a 3-channel video, as was expected.  I can't help you.", "Sorry.");
           return;
@@ -192,6 +195,7 @@ namespace BADVideo {
 
         //show the progress bar for enhancing the video
         progressBar1->Visible = true;
+        progressBar1->Value = 0;
         progressBar1->Maximum = numFrames*0.7;
 
         /* Debug
