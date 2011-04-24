@@ -189,7 +189,6 @@ namespace BADVideo {
         fclose(fp);
         */
 
-
         for(int i=0; i < numFrames; ++i) {
           IplImage* curFrame = newVideoFrames[i];
           int width = curFrame->width;
@@ -212,11 +211,14 @@ namespace BADVideo {
       ///On click of SAVE icon, the enhanced video is written out to a file.
       ///</summary>
       System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //user hit OK (i.e. did not cancel the operation)
         if (saveFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+          //get the filename that the user entered
+          const char * fileName = (char*)Marshal::StringToHGlobalAnsi(saveFileDialog1->FileName).ToPointer();
           //create a CvSize structure to pass to cvCreateVideoWriter
           CvSize videoSize = cvSize(videoWidth, videoHeight);
           //the argument '0' is telling Windows to create a writer of uncompressed .avi files
-          CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
+          CvVideoWriter* writer = cvCreateVideoWriter(fileName, CV_FOURCC('P','I','M','1'), fps, videoSize);
           //write every frame
           for (int i=0; i < numFrames; ++i) {
             cvWriteFrame(writer, newVideoFrames[i]);
