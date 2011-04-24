@@ -144,19 +144,25 @@ namespace BADVideo {
         const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
         //create a viewing window for the original video
         cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
+        //create a viewing window for the enhanced video
+        cvNamedWindow("Enhanced", CV_WINDOW_AUTOSIZE);
 
+        //capture object for the original video
         CvCapture* videoCapture = cvCreateFileCapture(fileName);
-        IplImage* frame;  //holds each frame in the video
+        IplImage* frame;  //holds each frame in the original video
 
-        //play the video
-        while(1) {
+        //play the videos
+        for(int i=0; i < numFrames; ++i) {
           //grab next frame
           frame = cvQueryFrame(videoCapture);
           //end of video
           if (!frame)
             break;
-          //display the frame
+
+          //display the current frame of each video
           cvShowImage("Original", frame);
+          cvShowImage("Enhanced", newVideoFrames[i]);
+
           //check for keystroke at each frame (assuming frames per second (fps) is 30)
           char c = cvWaitKey(33);
           //stop playback if user hit 'ESC'
@@ -167,6 +173,7 @@ namespace BADVideo {
         //free allocated memory used by opencv
         cvReleaseCapture(&videoCapture);
         cvDestroyWindow("Original");
+        cvDestroyWindow("Enhanced");
       }
 
       //----------------------------------------------------------------------
