@@ -240,7 +240,7 @@ namespace BADVideo {
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-        this->BackColor = System::Drawing::SystemColors::Window;
+        this->BackColor = System::Drawing::SystemColors::Control;
         this->ClientSize = System::Drawing::Size(340, 368);
         this->Controls->Add(this->FilenameLabel);
         this->Controls->Add(this->EnhanceLabel);
