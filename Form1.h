@@ -15,25 +15,51 @@ namespace BADVideo {
   using namespace System::Runtime::InteropServices;
 
 	/// <summary>
-	/// Summary for Form1
+	/// The main window (form) of BADVideo.
 	/// </summary>
 	public ref class Form1 : public System::Windows::Forms::Form
 	{
+
+    #pragma region Hand-written code (not auto-generated)
+
+    //----------------------------------------------------------------------
+    //-------------------------     FIELDS     -----------------------------
+    //----------------------------------------------------------------------
+
     private:
+      ///the full path filename of the opened video
       String^ videoFileName;
-  private: System::Windows::Forms::PictureBox^  EnhanceImageButton;
-  private: System::Windows::Forms::Label^  EnhanceLabel;
-           IplImage** newVideoFrames;
-           double fps;
-           int videoWidth;
-           int videoHeight;
-  private: System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
-  private: System::Windows::Forms::Label^  FilenameLabel;
-           int numFrames;
+
+      ///an array of images (frames) to hold a copy of the original video that
+      /// will then be used to process and become the enhanced video output
+      IplImage** newVideoFrames;
+
+      ///frames per second of the video
+      double fps;
+
+      ///width of video (in pixels)
+      int videoWidth;
+
+      ///height of video (in pixels)
+      int videoHeight;
+
+      ///the total number of frames in the video
+      int numFrames;
+
+    //----------------------------------------------------------------------
+    //------------------     CONSTRUCTORS/DESTRUCTOR     -------------------
+    //----------------------------------------------------------------------
 
 	  public:
+
+      ///<summary>
+      ///Creates a Form1 object, which is the main Window for BADVideo.
+      ///</summary>
 		  Form1(void) {
+        //call auto-generated code for initializing all GUI components
 			  InitializeComponent();
+
+        //set custom fields to default values
 			  videoFileName = nullptr;
         newVideoFrames = nullptr;
         fps = 0.0;
@@ -42,7 +68,8 @@ namespace BADVideo {
         numFrames = 0;
 		  }
 
-	  protected:
+      //----------------------------------------------------------------------
+
 		  /// <summary>
 		  /// Clean up any resources being used.
 		  /// </summary>
@@ -50,21 +77,134 @@ namespace BADVideo {
 			  if (components) {
 				  delete components;
 			  }
-
         if (newVideoFrames) {
           delete newVideoFrames;
         }
 		  }
-	  private: System::Windows::Forms::PictureBox^  SaveImageButton;
-	  protected: 
-	  private: System::Windows::Forms::Label^  OpenLabel;
-	  private: System::Windows::Forms::PictureBox^  PreviewImageButton;
-	  private: System::Windows::Forms::Label^  PreviewLabel;
-	  private: System::Windows::Forms::PictureBox^  OpenImageButton;
-	  private: System::Windows::Forms::Label^  SaveLabel;
-	  private: System::Windows::Forms::PictureBox^  exitImageButton;
-	  private: System::Windows::Forms::Label^  ExitLabel;
-  private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
+
+    //----------------------------------------------------------------------
+    //------------------------     METHODS     -----------------------------
+    //----------------------------------------------------------------------
+
+    private:
+
+      ///<summary>
+      ///On click of EXIT icon, exit the program.
+      ///</summary>
+      System::Void exitImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        exit(0);
+			}
+
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of OPEN icon, open the avi file select dialog
+      ///</summary>
+      System::Void OpenImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+          //save the (full path) filename
+          videoFileName = openFileDialog1->FileName;
+
+          //get the filename only (without the path)
+          int idx = videoFileName->LastIndexOf('\\');
+          String^ shortFileName = videoFileName->Substring(idx+1);
+
+          //show the filename in the form
+          FilenameLabel->Text = shortFileName;
+          FilenameLabel->Visible = true;
+
+          //convert String^ to char* for opencv
+          const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
+
+          CvCapture* videoCapture = cvCreateFileCapture(fileName);
+          //get the frames per second (fps) of the video
+          fps = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FPS);
+          //get the size of the video
+          videoWidth  = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_WIDTH);
+          videoHeight = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_HEIGHT);
+          //get the number of frames for the video
+          // (subtract 1, because it seems the last frame is null, but is
+          // included in the frame count)
+          numFrames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
+          newVideoFrames = new IplImage*[numFrames];
+          //store the frames of the video for later use
+          for (int i=0; i < numFrames; ++i) {
+            newVideoFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
+          }
+        }
+      }
+
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of PREVIEW icon, play the original video along side an
+      ///enhanced version of the original.
+      ///</summary>
+      System::Void PreviewImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //convert String^ to char* for opencv
+        const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
+        //create a viewing window for the original video
+        cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
+
+        CvCapture* videoCapture = cvCreateFileCapture(fileName);
+        IplImage* frame;  //holds each frame in the video
+
+        //play the video
+        while(1) {
+          //grab next frame
+          frame = cvQueryFrame(videoCapture);
+          //end of video
+          if (!frame)
+            break;
+          //display the frame
+          cvShowImage("Original", frame);
+          //check for keystroke at each frame (assuming frames per second (fps) is 30)
+          char c = cvWaitKey(33);
+          //stop playback if user hit 'ESC'
+          if (c == 27)
+            break;
+        }
+
+        //free allocated memory used by opencv
+        cvReleaseCapture(&videoCapture);
+        cvDestroyWindow("Original");
+      }
+
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of ENHANCE icon, process the stored video.
+      ///</summary>
+      System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+      
+      }
+      
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///On click of SAVE icon, the enhanced video is written out to a file.
+      ///</summary>
+      System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        if (saveFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+          //create a CvSize structure to pass to cvCreateVideoWriter
+          CvSize videoSize = cvSize(videoWidth, videoHeight);
+          //the argument '0' is telling Windows to create a writer of uncompressed .avi files
+          CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
+          //write every frame
+          for (int i=0; i < numFrames; ++i) {
+            cvWriteFrame(writer, newVideoFrames[i]);
+          }
+          //cleanup
+          cvReleaseVideoWriter(&writer);
+        }
+      }
+
+    //end of "Hand-written code (not auto-generated)" region
+    #pragma endregion
+
+    //========================================================================
+
+    #pragma region Windows Form Designer generated code
 
 	  private:
 		  /// <summary>
@@ -72,7 +212,21 @@ namespace BADVideo {
 		  /// </summary>
 		  System::ComponentModel::Container ^components;
 
-  #pragma region Windows Form Designer generated code
+	    System::Windows::Forms::PictureBox^  SaveImageButton;
+	    System::Windows::Forms::Label^  OpenLabel;
+	    System::Windows::Forms::PictureBox^  PreviewImageButton;
+	    System::Windows::Forms::Label^  PreviewLabel;
+	    System::Windows::Forms::PictureBox^  OpenImageButton;
+	    System::Windows::Forms::Label^  SaveLabel;
+	    System::Windows::Forms::PictureBox^  exitImageButton;
+	    System::Windows::Forms::Label^  ExitLabel;
+      System::Windows::Forms::OpenFileDialog^  openFileDialog1;
+      System::Windows::Forms::PictureBox^  EnhanceImageButton;
+      System::Windows::Forms::Label^  EnhanceLabel;
+      System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
+      System::Windows::Forms::Label^  FilenameLabel;
+
+
 		  /// <summary>
 		  /// Required method for Designer support - do not modify
 		  /// the contents of this method with the code editor.
@@ -267,123 +421,10 @@ namespace BADVideo {
         this->PerformLayout();
 
       }
-  #pragma endregion
 
-			
-	  private:
       System::Void Form1_Load(System::Object^  sender, System::EventArgs^  e) {}
 
-      //----------------------------------------------------------------------
-
-      ///<summary>
-      ///On click of EXIT icon, exit the program.
-      ///</summary>
-      System::Void exitImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        exit(0);
-			}
-
-      //----------------------------------------------------------------------
-
-      ///<summary>
-      ///On click of OPEN icon, open the avi file select dialog
-      ///</summary>
-      System::Void OpenImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-          //save the (full path) filename
-          videoFileName = openFileDialog1->FileName;
-
-          //get the filename only (without the path)
-          int idx = videoFileName->LastIndexOf('\\');
-          String^ shortFileName = videoFileName->Substring(idx+1);
-
-          //show the filename in the form
-          FilenameLabel->Text = shortFileName;
-          FilenameLabel->Visible = true;
-
-          //convert String^ to char* for opencv
-          const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
-
-          CvCapture* videoCapture = cvCreateFileCapture(fileName);
-          //get the frames per second (fps) of the video
-          fps = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FPS);
-          //get the size of the video
-          videoWidth  = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_WIDTH);
-          videoHeight = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_HEIGHT);
-          //get the number of frames for the video
-          // (subtract 1, because it seems the last frame is null, but is
-          // included in the frame count)
-          numFrames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
-          newVideoFrames = new IplImage*[numFrames];
-          //store the frames of the video for later use
-          for (int i=0; i < numFrames; ++i) {
-            newVideoFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
-          }
-        }
-      }
-
-      //----------------------------------------------------------------------
-
-      ///<summary>
-      ///On click of PREVIEW icon, play the original video along side an
-      ///enhanced version of the original.
-      ///</summary>
-      System::Void PreviewImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        //convert String^ to char* for opencv
-        const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
-        //create a viewing window for the original video
-        cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
-
-        CvCapture* videoCapture = cvCreateFileCapture(fileName);
-        IplImage* frame;  //holds each frame in the video
-
-        //play the video
-        while(1) {
-          //grab next frame
-          frame = cvQueryFrame(videoCapture);
-          //end of video
-          if (!frame)
-            break;
-          //display the frame
-          cvShowImage("Original", frame);
-          //check for keystroke at each frame (assuming frames per second (fps) is 30)
-          char c = cvWaitKey(33);
-          //stop playback if user hit 'ESC'
-          if (c == 27)
-            break;
-        }
-
-        //free allocated memory used by opencv
-        cvReleaseCapture(&videoCapture);
-        cvDestroyWindow("Original");
-      }
-
-      //----------------------------------------------------------------------
-
-      ///<summary>
-      ///On click of ENHANCE icon, process the stored video.
-      ///</summary>
-      System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-      
-      }
-      
-      //----------------------------------------------------------------------
-
-      ///<summary>
-      ///On click of SAVE icon, the enhanced video is written out to a file.
-      ///</summary>
-      System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
-        if (saveFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-          //create a CvSize structure to pass to cvCreateVideoWriter
-          CvSize videoSize = cvSize(videoWidth, videoHeight);
-          //the argument '0' is telling Windows to create a writer of uncompressed .avi files
-          CvVideoWriter* writer = cvCreateVideoWriter("newfile.mpg", CV_FOURCC('P','I','M','1'), fps, videoSize);
-          //write every frame
-          for (int i=0; i < numFrames; ++i) {
-            cvWriteFrame(writer, newVideoFrames[i]);
-          }
-          //cleanup
-          cvReleaseVideoWriter(&writer);
-        }
-      }
+    //end of "Windows Form Designer generated code" region
+    #pragma endregion
   };
 }
