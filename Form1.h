@@ -148,7 +148,7 @@ namespace BADVideo {
         cvNamedWindow("Enhanced", CV_WINDOW_AUTOSIZE);
         //position the windows side-by-side
         cvMoveWindow("Original", this->Location.X + this->Size.Width + 10, this->Location.Y);
-        cvMoveWindow("Enhanced", this->Location.X + this->Size.Width + newVideoFrames[0]->width + 20, this->Location.Y);
+        cvMoveWindow("Enhanced", this->Location.X + this->Size.Width + videoWidth + 20, this->Location.Y);
 
         //capture object for the original video
         CvCapture* videoCapture = cvCreateFileCapture(fileName);
@@ -196,7 +196,7 @@ namespace BADVideo {
         //show the progress bar for enhancing the video
         progressBar1->Visible = true;
         progressBar1->Value = 0;
-        progressBar1->Maximum = numFrames*0.7;
+        progressBar1->Maximum = numFrames;
 
         /* Debug
         FILE * fp = fopen("log.txt","w");
@@ -206,19 +206,28 @@ namespace BADVideo {
         fclose(fp);
         */
 
+        /* Debug
+        cv::Mat mat(newVideoFrames[0]);
+        cv::Mat mat2;
+        cv::bilateralFilter(mat, mat2, 10, 10, 75);
+        IplImage* i = new IplImage(mat2);
+        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
+        cvShowImage("orig",newVideoFrames[0]);
+        cvNamedWindow("new",CV_WINDOW_AUTOSIZE);
+        cvShowImage("new", i);
+        cvWaitKey(0);
+        cvReleaseImage(&i);
+        cvDestroyWindow("orig");
+        cvDestroyWindow("new");
+        return;
+        */
+
         for(int i=0; i < numFrames; ++i) {
           IplImage* curFrame = newVideoFrames[i];
-          int width = curFrame->width;
-          int height = curFrame->height;
-          int step = curFrame->widthStep;
-          for (int j=0; j < height; ++j) {
-            uchar* ptr = (uchar*) (curFrame->imageData + j * step);
-            for (int k=0; k < width; ++k) {
-              ptr[3*k] *= 0.5;
-              ptr[3*k+1] *= 0.5;
-              ptr[3*k+2] *= 0.5;
-            }
-          }
+          cv::Mat matrix(curFrame);
+          cv::Mat matrix2;
+          cv::bilateralFilter(matrix, matrix2, 15, 20, 150);
+          curFrame = cvCloneImage(new IplImage(matrix2));
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
