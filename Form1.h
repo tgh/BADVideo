@@ -184,7 +184,7 @@ namespace BADVideo {
       ///<summary>
       ///On click of ENHANCE icon, process the stored video.
       ///</summary>
-      System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+      System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^ e) {
         //unshow the "Done." label (if already showing)
         DoneLabel->Visible = false;
         //assertion failed: video does not have 3 channels
@@ -198,7 +198,7 @@ namespace BADVideo {
         progressBar1->Value = 0;
         progressBar1->Maximum = numFrames;
 
-        /* Debug
+        /* Debug output to a log file
         FILE * fp = fopen("log.txt","w");
         fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData))));
         fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData+1))));
@@ -206,28 +206,38 @@ namespace BADVideo {
         fclose(fp);
         */
 
-        /* Debug
-        cv::Mat mat(newVideoFrames[0]);
-        cv::Mat mat2;
-        cv::bilateralFilter(mat, mat2, 10, 10, 75);
+        /* Debug: showing results of 1 frame
+        
+        cv::Mat mat(newVideoFrames[0]); //matrix of first frame
+        cv::Mat mat2;                   //to hold enhancement of first frame
+
+        //enhance the frame
+
+        //gaussian blur
+        cv::GaussianBlur(mat, mat2, cv::Size(15,15), 0, 0);
+
+        //convert enhanced version matrix into an image
         IplImage* i = new IplImage(mat2);
+        //show original frame in a window
         cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
         cvShowImage("orig",newVideoFrames[0]);
+        //show enhanced frame in a window
         cvNamedWindow("new",CV_WINDOW_AUTOSIZE);
         cvShowImage("new", i);
+        //wiat for a keystroke...
         cvWaitKey(0);
-        cvReleaseImage(&i);
+        //destroy windows and move on
         cvDestroyWindow("orig");
         cvDestroyWindow("new");
         return;
-        */
+
+        /* END Debug */
 
         for(int i=0; i < numFrames; ++i) {
-          IplImage* curFrame = newVideoFrames[i];
-          cv::Mat matrix(curFrame);
+          cv::Mat matrix(newVideoFrames[i]);
           cv::Mat matrix2;
-          cv::bilateralFilter(matrix, matrix2, 15, 20, 150);
-          curFrame = cvCloneImage(new IplImage(matrix2));
+          cv::GaussianBlur(matrix, matrix2, cv::Size(15,15), 0, 0);
+          newVideoFrames[i] = cvCloneImage(new IplImage(matrix2));
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
