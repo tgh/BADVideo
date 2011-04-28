@@ -1,5 +1,5 @@
-!*.cpp
-!*.avi
-!*.txt
-!*.h
-!*.png
+*.vcxproj*
+Debug/
+*.txt
+*.ico
+*.rc
