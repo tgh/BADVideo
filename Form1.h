@@ -207,24 +207,22 @@ namespace BADVideo {
         */
 
         /* Debug: showing results of 1 frame
-        
-        cv::Mat mat(newVideoFrames[0]); //matrix of first frame
-        cv::Mat mat2;                   //to hold enhancement of first frame
 
         //enhance the frame
 
-        //gaussian blur
-        cv::GaussianBlur(mat, mat2, cv::Size(15,15), 0, 0);
+        cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[0]));
 
-        //convert enhanced version matrix into an image
-        IplImage* i = new IplImage(mat2);
+        //gaussian blur
+        cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(15,15), 0, 0);
+        IplImage* i = new IplImage(enhancedMatrix);
+
         //show original frame in a window
         cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
         cvShowImage("orig",newVideoFrames[0]);
         //show enhanced frame in a window
         cvNamedWindow("new",CV_WINDOW_AUTOSIZE);
         cvShowImage("new", i);
-        //wiat for a keystroke...
+        //wait for a keystroke...
         cvWaitKey(0);
         //destroy windows and move on
         cvDestroyWindow("orig");
@@ -234,10 +232,10 @@ namespace BADVideo {
         /* END Debug */
 
         for(int i=0; i < numFrames; ++i) {
-          cv::Mat matrix(newVideoFrames[i]);
-          cv::Mat matrix2;
-          cv::GaussianBlur(matrix, matrix2, cv::Size(15,15), 0, 0);
-          newVideoFrames[i] = cvCloneImage(new IplImage(matrix2));
+          cv::Mat originalMatrix(newVideoFrames[i]);
+          cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[i]));
+          cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(15,15), 0, 0);
+          newVideoFrames[i] = cvCloneImage(new IplImage(enhancedMatrix));
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
@@ -266,10 +264,42 @@ namespace BADVideo {
         }
       }
 
+      //------------------------------------------------------------------------
+
+      ///<summary>
+      ///Extracts the luminance of an image and returns it as a new image, not
+      /// modifying the original.
+      ///</summary>
+      IplImage* getLuminanceAsImage(IplImage * img) {
+        int width  = img->width;
+        int height = img->height;
+        int len = width * height;
+        uchar * lum_vals = new uchar[len];    //to store the luminance values
+
+        //extract the luminance values from the image pixel by pixel
+        int j=0;
+        for (int y=0; y < height; ++y) {
+          uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
+          for (int x=0; x < width; ++x) {
+            //convert RGB values to luminance
+            lum_vals[j] = (uchar) (0.2126 * ptr[3*x] + 0.7152 * ptr[3*x+1] + 0.0722 * ptr[3*x+2]);
+            ++j;
+          }
+        }
+
+        //create a matrix with the values
+        cv::Mat luminanceMatrix(height, width, CV_8UC1, lum_vals);
+
+        //convert matrix of luminance values into an image
+        return new IplImage(luminanceMatrix);
+      }
+
     //end of "Hand-written code (not auto-generated)" region
     #pragma endregion
 
+
     //========================================================================
+
 
     #pragma region Windows Form Designer generated code
 
