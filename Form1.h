@@ -248,7 +248,13 @@ namespace BADVideo {
         for(int i=0; i < numFrames; ++i) {
           cv::Mat originalMatrix(newVideoFrames[i]);
           cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[i]));
-          cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(15,15), 0, 0);
+          try {
+            cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
+          }
+          catch (Exception^ e) {
+            MessageBox::Show("The dimensional sizes of the gaussian kernel must be odd positive numbers.","Error");
+            return;
+          }
           newVideoFrames[i] = cvCloneImage(new IplImage(enhancedMatrix));
           progressBar1->Increment(1);
         }
@@ -267,7 +273,6 @@ namespace BADVideo {
           const char * fileName = (char*)Marshal::StringToHGlobalAnsi(saveFileDialog1->FileName).ToPointer();
           //create a CvSize structure to pass to cvCreateVideoWriter
           CvSize videoSize = cvSize(videoWidth, videoHeight);
-          //the argument '0' is telling Windows to create a writer of uncompressed .avi files
           CvVideoWriter* writer = cvCreateVideoWriter(fileName, CV_FOURCC('P','I','M','1'), fps, videoSize);
           //write every frame
           for (int i=0; i < numFrames; ++i) {
@@ -306,15 +311,6 @@ namespace BADVideo {
 
         //convert matrix of luminance values into an image
         return new IplImage(luminanceMatrix);
-      }
-
-      //----------------------------------------------------------------------
-
-      ///
-      ///
-      ///
-      void onTrackbarSlide(CvCapture* capture, int position) {
-        cvSetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES, position);
       }
 
     //end of "Hand-written code (not auto-generated)" region
