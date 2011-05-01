@@ -155,22 +155,36 @@ namespace BADVideo {
         IplImage* frame;  //holds each frame in the original video
 
         //play the videos
-        for(int i=0; i < numFrames; ++i) {
-          //grab next frame
-          frame = cvQueryFrame(videoCapture);
-          //end of video
-          if (!frame)
-            break;
+        bool play = true;
+        while (play) {
+          //start video capture at first frame
+          cvSetCaptureProperty(videoCapture, CV_CAP_PROP_POS_FRAMES, 0);
+          for(int i=0; i < numFrames; ++i) {
+            //grab next frame
+            frame = cvQueryFrame(videoCapture);
+            //end of video
+            if (!frame)
+              break;
 
-          //display the current frame of each video
-          cvShowImage("Original", frame);
-          cvShowImage("Enhanced", newVideoFrames[i]);
+            //display the current frame of each video
+            cvShowImage("Original", frame);
+            cvShowImage("Enhanced", newVideoFrames[i]);
 
-          //check for keystroke at each frame (assuming frames per second (fps) is 30)
-          char c = cvWaitKey(33);
-          //stop playback if user hit 'ESC'
-          if (c == 27)
-            break;
+            //check for keystroke at each frame (assuming frames per second (fps) is 30)
+            char c = cvWaitKey(33);
+            //stop playback and close windows if user hit 'ESC'
+            if (c == 27) {
+              play = false;
+              break;
+            }
+            //stop video if user hit spacebar
+            if (c == 32) {
+              //wait until user hits spacebar again to resume playback
+              do {
+                c = cvWaitKey(0);
+              } while (c != 32);
+            }
+          }
         }
 
         //free allocated memory used by opencv
@@ -292,6 +306,15 @@ namespace BADVideo {
 
         //convert matrix of luminance values into an image
         return new IplImage(luminanceMatrix);
+      }
+
+      //----------------------------------------------------------------------
+
+      ///
+      ///
+      ///
+      void onTrackbarSlide(CvCapture* capture, int position) {
+        cvSetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES, position);
       }
 
     //end of "Hand-written code (not auto-generated)" region
