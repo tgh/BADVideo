@@ -627,7 +627,6 @@ namespace BADVideo {
         this->Controls->Add(this->SaveImageButton);
         this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::Fixed3D;
         this->Location = System::Drawing::Point(5, 5);
-        this->MaximizeBox = false;
         this->Name = L"Form1";
         this->StartPosition = System::Windows::Forms::FormStartPosition::Manual;
         this->Text = L"BADVideo";
