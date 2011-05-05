@@ -264,7 +264,9 @@ namespace BADVideo {
         /* END Debug */
 
         for(int i=0; i < numFrames; ++i) {
+          //etract the luminance from the frame
           cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
+          //apply a smooth filter to the luminance-only image
           try {
             cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
           }
@@ -272,8 +274,8 @@ namespace BADVideo {
             MessageBox::Show("The dimensional sizes of the gaussian kernel must be odd positive numbers.","Error");
             return;
           }
-          //newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
-          newVideoFrames[i] = cvCloneImage(new IplImage(enhancedMatrix));
+          newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
+          //newVideoFrames[i] = cvCloneImage(new IplImage(enhancedMatrix));
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
@@ -354,34 +356,31 @@ namespace BADVideo {
         int width  = img->width;
         int height = img->height;
         int len    = width * height;
-        uchar* gain_vals = new uchar[len];  //to store the gain factor values
+        float* gain_vals = new float[len];  //to store the gain factor values
 
-        cv::Mat maxLumMatrix(height, width, CV_8UC1, max_lum_vals);
+        cv::Mat maxLumMatrix(height, width, CV_32FC1, max_lum_vals);
         IplImage* maxLumImg = new IplImage(maxLumMatrix);
 
         //estimate gain factors for each pixel
-        FILE * fp = fopen("log.txt", "w");
         int i=0;
         for (int y=0; y < height; ++y) {
-          uchar* imgPtr = (uchar*) (img->imageData + y * img->widthStep);
-          uchar* maxPtr = (uchar*) (maxLumImg->imageData + y * maxLumImg->widthStep);
+          float* imgPtr = (float*) (img->imageData + y * img->widthStep);
+          float* maxPtr = (float*) (maxLumImg->imageData + y * maxLumImg->widthStep);
           for (int x=0; x < width; ++x) {
             if (maxPtr[x] != 0) {
-              gain_vals[i] = (uchar) ((log((long double)((imgPtr[x]/maxPtr[x])*(psi-1) + 1) / log((long double)psi)))*255);
+              gain_vals[i] = (float) ((log((long double)((imgPtr[x]/maxPtr[x])*(psi-1) + 1.0) / log((long double)psi))));
             }
             else {
-              gain_vals[i] = 0;
+              gain_vals[i] = (float) 0.0;
             }
             ++i;
-            fprintf(fp, "%d", gain_vals[i]);
           }
         }
-        fclose(fp);
 
         delete maxLumImg;
 
         //create a matrix with the values
-        cv::Mat gainMatrix(height, width, CV_8UC1, gain_vals);
+        cv::Mat gainMatrix(height, width, CV_32FC1, gain_vals);
         //convert matrix of gain values into an image
         return new IplImage(gainMatrix);
 
