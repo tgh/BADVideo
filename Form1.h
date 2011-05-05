@@ -47,7 +47,7 @@ namespace BADVideo {
       int numFrames;
 
       ///holds the max luminosity values for each pixel across all frames
-      uchar* max_lum_vals;
+      float* max_lum_vals;
 
     //----------------------------------------------------------------------
     //------------------     CONSTRUCTORS/DESTRUCTOR     -------------------
@@ -136,25 +136,10 @@ namespace BADVideo {
           }
 
           //initialize the max luminance values array
-          max_lum_vals = new uchar[videoWidth*videoHeight];
+          max_lum_vals = new float[videoWidth*videoHeight];
           for (int i=0; i < numFrames; ++i) {
-            max_lum_vals[i] = 0;
+            max_lum_vals[i] = (float) 0.0;
           }
-
-          //DEBUG
-          /*
-          FILE * fp = fopen("log.txt", "w");
-          IplImage* temp = cvCreateImage(cvGetSize(newVideoFrames[0]), IPL_DEPTH_32F, 3);
-          cvCvtScale(newVideoFrames[0], temp);
-          cvNormalize(temp, temp, 0, 1, CV_MINMAX);
-          for (int y=0; y < videoHeight; ++y) {
-            double* ptr = (double*) (temp->imageData + y * temp->widthStep);
-            for (int x=0; x < videoWidth; ++x) {
-              fprintf(fp, "%f %f %f\n", ptr[x*3], ptr[x*3+1], ptr[x*3+2]);
-            }
-          }
-          fclose(fp);
-          */
         }
       }
 
@@ -271,8 +256,7 @@ namespace BADVideo {
         /* END Debug */
 
         for(int i=0; i < numFrames; ++i) {
-          cv::Mat originalMatrix(newVideoFrames[i]);
-          cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[i]));
+          cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
           try {
             cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
           }
@@ -313,21 +297,22 @@ namespace BADVideo {
 
       ///<summary>
       ///Extracts the luminance of an image and returns it as a new image, not
-      /// modifying the original.
+      /// modifying the original.  It is assumed the IplImage is of type
+      /// CV_32FC3.
       ///</summary>
       IplImage* getLuminanceAsImage(IplImage * img) {
         int width  = img->width;
         int height = img->height;
         int len    = width * height;
-        uchar * lum_vals = new uchar[len];    //to store the luminance values
+        float * lum_vals = new float[len];    //to store the luminance values
 
         //extract the luminance values from the image pixel by pixel
         int j=0;
         for (int y=0; y < height; ++y) {
-          uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
+          float* ptr = (float*) (img->imageData + y * img->widthStep);
           for (int x=0; x < width; ++x) {
             //convert RGB values to luminance
-            lum_vals[j] = (uchar) (0.2126 * ptr[3*x] + 0.7152 * ptr[3*x+1] + 0.0722 * ptr[3*x+2]);
+            lum_vals[j] = (float) (0.2126 * ptr[3*x] + 0.7152 * ptr[3*x+1] + 0.0722 * ptr[3*x+2]);
             //see if this is the maximum luminance value for this pixel seen so far
             if (max_lum_vals[j] < lum_vals[j]) {
               max_lum_vals[j] = lum_vals[j];
@@ -337,7 +322,7 @@ namespace BADVideo {
         }
 
         //create a matrix with the values
-        cv::Mat luminanceMatrix(height, width, CV_8UC1, lum_vals);
+        cv::Mat luminanceMatrix(height, width, CV_32FC1, lum_vals);
 
         //convert matrix of luminance values into an image
         return new IplImage(luminanceMatrix);
@@ -380,9 +365,33 @@ namespace BADVideo {
 
         //create a matrix with the values
         cv::Mat gainMatrix(height, width, CV_8UC1, gain_vals);
-
         //convert matrix of gain values into an image
         return new IplImage(gainMatrix);
+      }
+
+      //----------------------------------------------------------------------
+
+      ///<summary>
+      ///Takes the given IplImage and returns a normalized version of the
+      ///IplImage.  It is assumed the IplImage is of type CV_8UC3.
+      ///</summary>
+      IplImage* normalizeIplImage(IplImage* img) {
+        float* normalizedVals = new float[videoWidth * videoHeight * 3];
+
+        int i = 0;
+        for (int y=0; y < videoHeight; ++y) {
+          uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
+          for (int x=0; x < videoWidth; ++x) {
+            normalizedVals[i++] = (float) ptr[x*3]   / (float) 255.0;
+            normalizedVals[i++] = (float) ptr[x*3+1] / (float) 255.0;
+            normalizedVals[i++] = (float) ptr[x*3+2] / (float) 255.0;
+          }
+        }
+
+        //create a matrix with the values
+        cv::Mat matrix(videoHeight, videoWidth, CV_32FC3, normalizedVals);
+        //convert the matrix into an image
+        return new IplImage(matrix);
       }
 
       //----------------------------------------------------------------------
