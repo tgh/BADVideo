@@ -99,7 +99,9 @@ namespace BADVideo {
         exit(0);
 			}
 
+
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///On click of OPEN icon, open the avi file select dialog
@@ -141,9 +143,12 @@ namespace BADVideo {
             max_lum_vals[i] = (float) 0.0;
           }
         }
-      }
+
+      }// OPEN
+
 
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///On click of PREVIEW icon, play the original video along side an
@@ -201,9 +206,12 @@ namespace BADVideo {
         cvReleaseCapture(&videoCapture);
         cvDestroyWindow("Original");
         cvDestroyWindow("Enhanced");
-      }
+      
+      }// PREVIEW
+
 
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///On click of ENHANCE icon, process the stored video.
@@ -269,9 +277,12 @@ namespace BADVideo {
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
-      }
+
+      }// ENHANCE
       
+
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///On click of SAVE icon, the enhanced video is written out to a file.
@@ -291,9 +302,12 @@ namespace BADVideo {
           //cleanup
           cvReleaseVideoWriter(&writer);
         }
-      }
+
+      }// SAVE
+
 
       //------------------------------------------------------------------------
+
 
       ///<summary>
       ///Extracts the luminance of an image and returns it as a new image, not
@@ -326,9 +340,12 @@ namespace BADVideo {
 
         //convert matrix of luminance values into an image
         return new IplImage(luminanceMatrix);
-      }
+
+      }// getLuminanceAsImage(IplImage*)
+
 
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///
@@ -367,9 +384,12 @@ namespace BADVideo {
         cv::Mat gainMatrix(height, width, CV_8UC1, gain_vals);
         //convert matrix of gain values into an image
         return new IplImage(gainMatrix);
-      }
+
+      }// m(IplImage*, int)
+
 
       //----------------------------------------------------------------------
+
 
       ///<summary>
       ///Takes the given IplImage and returns a normalized version of the
@@ -392,7 +412,9 @@ namespace BADVideo {
         cv::Mat matrix(videoHeight, videoWidth, CV_32FC3, normalizedVals);
         //convert the matrix into an image
         return new IplImage(matrix);
-      }
+
+      }// normalizeIplImage(IplImage*)
+
 
       //----------------------------------------------------------------------
 
