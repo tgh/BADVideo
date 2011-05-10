@@ -264,8 +264,12 @@ namespace BADVideo {
         /* END Debug */
 
         for(int i=0; i < numFrames; ++i) {
-          //etract the luminance from the frame
-          cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
+          //extract the luminance from the frame
+          //cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
+          cv::Mat enhancedMatrix(normalizeIplImage(newVideoFrames[i]));
+          cv::Mat tempMatrix(videoHeight, videoWidth, CV_32FC3);
+
+          /*
           //apply a smooth filter to the luminance-only image
           try {
             cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
@@ -274,8 +278,11 @@ namespace BADVideo {
             MessageBox::Show("The dimensional sizes of the gaussian kernel must be odd positive numbers.","Error");
             return;
           }
-          newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
-          //newVideoFrames[i] = cvCloneImage(new IplImage(enhancedMatrix));
+          */
+
+          bilateralFilter(enhancedMatrix, tempMatrix, 9, 100.0, 10.0);
+          //newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
+          newVideoFrames[i] = cvCloneImage(new IplImage(tempMatrix));
           progressBar1->Increment(1);
         }
         DoneLabel->Visible = true;
@@ -416,6 +423,41 @@ namespace BADVideo {
 
 
       //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///The spatial bilateral filter.  It is assumed the IplImage is of type
+      /// CV_32FC3.
+      ///</summary>
+      IplImage* B(IplImage* img, double sigma_h, double simgma_i, int kernel_radius) {
+        int height_stop = img->height - kernel_radius;
+        int width_stop  = img->width  - kernel_radius;
+        int widthStep   = img->widthStep;
+
+        //row by row for each kernel center pixel, s
+        for (int y = kernel_radius; y < height_stop; ++y) {
+          float* s = (float*) (img->imageData + y * widthStep);
+          //column by column for each kernel center pixel, s
+          for (int x = kernel_radius; x < width_stop; ++x) {
+            float sum_numerator   = 0.0;
+            float sum_denominator = 0.0;
+            //row by row for each neighborhood pixel, p
+            for (int i = y - kernel_radius; i < y + kernel_radius; ++i) {
+              float* p = (float*) (img->imageData + i * widthStep);
+              //column by column for each neighborhood pixel, p
+              for (int j = x - kernel_radius; j < x + kernel_radius; ++j) {
+                //sum_numerator   += g(dist(i, j), sigma_h) * g(D(I(p), I(s)), sigma_i) * I(p);
+                //sum_denominator += g(dist(i, j), sigma_h) * g(D(I(p), I(s)), sigma_i);
+              }
+            }
+
+          }
+        }
+      }
+
+
+      //----------------------------------------------------------------------
+
 
       /*
         for (int y=0; y < height; ++y) {
