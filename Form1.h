@@ -610,6 +610,97 @@ namespace BADVideo {
       //----------------------------------------------------------------------
 
 
+      ///<summary>
+      ///
+      ///</summary>
+      void brightenAndDenoise(int temporalMargin, float gain) {
+        //an array to hold the pixel channel values across the temporal plain
+        // in order to average them
+        int avgArrayLength = temporalMargin * 2 + 1;
+        float* avgArray    = new float[avgArrayLength];
+        //an array to hold the final brightened and denoised values for each
+        // frame
+        int imgArrayLength = videoHeight * videoWidth * 3;
+        float* imgArray    = new float[imgArrayLength];
+
+        //process each frame...
+        for (int i=0; i < numFrames; ++i) {
+          //initialize start and end frames in the temporal plane
+          int start = i - temporalMargin;
+          int end   = i + temporalMargin + 1;
+
+          //not enough marginal frames before the current frame
+          if (i < temporalMargin) {
+            start = 0;
+            end += temporalMargin - i;
+          }
+          //not enough marginal frames after the current frame
+          else if (i >= numFrames - temporalMargin) {
+            end = numFrames;
+            start -= temporalMargin - (numFrames - i - 1);
+          }
+
+          int imgIndex = 0;
+          //process each row of pixels...
+          for (int y=0; y < videoHeight; ++y) {
+            //process each pixel in the row...
+            for (int x=0; x < videoWidth; ++x) {
+              //process each channel of the pixel...
+              for (int c=0; c < 3; ++c, ++imgIndex) {
+                int avgIndex = 0;
+                //get the values of this channel from the other frames within
+                // the temporal margin
+                for (int j=start; j < end; ++j, ++avgIndex) {
+                  avgArray[avgIndex] = getValue(newVideoFrames[j], y, x, c);
+                }
+                //calculate the average of these values
+                float average = calcAverage(avgArray, avgArrayLength);
+                //apply the brightness gain factor to the average
+                imgArray[imgIndex] = average * gain;
+              }
+            }
+          }
+
+          //create a new image with the brightened and denoised values
+          cv::Mat mat(videoHeight, videoWidth, CV_32FC3, imgArray);
+          IplImage* temp = new IplImage(mat);
+          //copy this image to the global result image array
+          newVideoFrames[i] = cvCloneImage(temp);
+          delete temp;
+        }
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///<\summary>
+      float getValue(IplImage* img, int y, int x, int c) {
+        float* ptr = (float*) (img->imageData + y * img->widthStep);
+        return ptr[x*3+c];
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      float calcAverage(float* arr, int len) {
+        float sum = 0.0;
+        for (int i=0; i < len; ++i) {
+          sum += arr[i];
+        }
+        return (float) sum / len;
+      }
+
+
+      //----------------------------------------------------------------------
+
+
       /*
         for (int y=0; y < height; ++y) {
           float* ptr = (float*) (img->imageData + y * img->widthStep);

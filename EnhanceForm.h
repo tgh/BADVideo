@@ -172,7 +172,6 @@ namespace BADVideo {
       this->label4->TabIndex = 2;
       this->label4->Text = L" * Number of frames before and after the processing frame with which to average t" 
         L"he pixels.";
-      this->label4->Click += gcnew System::EventHandler(this, &EnhanceForm::label4_Click);
       // 
       // label2
       // 
