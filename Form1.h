@@ -22,9 +22,10 @@ namespace BADVideo {
 
     #pragma region Hand-written code (not auto-generated)
 
-    //----------------------------------------------------------------------
-    //-------------------------     FIELDS     -----------------------------
-    //----------------------------------------------------------------------
+
+    //------------------------------------------------------------------------
+    //-------------------------     FIELDS     -------------------------------
+    //------------------------------------------------------------------------
 
     private:
       ///the full path filename of the opened video
@@ -49,9 +50,14 @@ namespace BADVideo {
       ///holds the max luminosity values for each pixel across all frames
       float* max_lum_vals;
 
-    //----------------------------------------------------------------------
-    //------------------     CONSTRUCTORS/DESTRUCTOR     -------------------
-    //----------------------------------------------------------------------
+      ///holds the average intensity values for each channel of each pixel for
+      /// all frames
+      float* intensity_averages;
+
+
+    //------------------------------------------------------------------------
+    //------------------     CONSTRUCTORS/DESTRUCTOR     ---------------------
+    //------------------------------------------------------------------------
 
 	  public:
 
@@ -72,7 +78,9 @@ namespace BADVideo {
         max_lum_vals = nullptr;
 		  }
 
+
       //----------------------------------------------------------------------
+
 
 		  /// <summary>
 		  /// Clean up any resources being used.
@@ -86,9 +94,10 @@ namespace BADVideo {
         }
 		  }
 
-    //----------------------------------------------------------------------
-    //------------------------     METHODS     -----------------------------
-    //----------------------------------------------------------------------
+
+    //------------------------------------------------------------------------
+    //------------------------     METHODS     -------------------------------
+    //------------------------------------------------------------------------
 
     private:
 
@@ -138,9 +147,17 @@ namespace BADVideo {
           }
 
           //initialize the max luminance values array
-          max_lum_vals = new float[videoWidth*videoHeight];
-          for (int i=0; i < numFrames; ++i) {
+          int length = videoWidth * videoHeight;
+          max_lum_vals = new float[length];
+          for (int i=0; i < length; ++i) {
             max_lum_vals[i] = (float) 0.0;
+          }
+
+          //initialize the average intenisty values array
+          length *= 3;
+          intensity_averages = new float[videoWidth*videoHeight*3];
+          for (int i=0; i < numFrames; ++i) {
+            intensity_averages[i] = (float) 0.0;
           }
         }
 
@@ -230,18 +247,46 @@ namespace BADVideo {
         progressBar1->Value = 0;
         progressBar1->Maximum = numFrames;
 
-        /* Debug output to a log file
-        FILE * fp = fopen("log.txt","w");
-        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData))));
-        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData+1))));
-        fprintf(fp,"%d",(*((uchar*)(newVideoFrames[0]->imageData+2))));
-        fclose(fp);
-        */
 
-        /* Debug: showing results of 1 frame
+        /* DEBUG: Show image of average of all frames */
+
+        calcIntensityAverages();
+        cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
+        IplImage* temp = new IplImage(avgIntensitiesMatrix);
+        float maxI = calcMaxImageIntensity(temp);
+        float gain = ((float) 1.0) / maxI;
+        IplImage* temp2 = brightenImage(temp, 3.0);
+
+        CvCapture* videoCapture = cvCreateFileCapture("C:\\Users\\tgh_2\\Desktop\\workspace\\visual\ studio\ 2010\\Projects\\BADVideo\\BADVideo\\1_(correctly_exposed).avi");
+        IplImage* goal = cvQueryFrame(videoCapture);
+
+        //create windows
+        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
+        cvShowImage("orig",newVideoFrames[0]);
+        cvNamedWindow("avg",CV_WINDOW_AUTOSIZE);
+        cvShowImage("avg",temp);
+        cvNamedWindow("result", CV_WINDOW_AUTOSIZE);
+        cvShowImage("result", temp2);
+        cvNamedWindow("goal", CV_WINDOW_AUTOSIZE);
+        cvShowImage("goal", goal);
+        //wait for a keystroke...
+        cvWaitKey(0);
+        //destroy windows
+        cvDestroyWindow("orig");
+        cvDestroyWindow("avg");
+        cvDestroyWindow("result");
+        cvDestroyWindow("goal");
+        cvReleaseCapture(&videoCapture);
+        delete temp;
+        delete temp2;
+        return;
+        
+        /* END DEBUG */
+
+
+        /* DEBUG: show results of 1 frame
 
         //enhance the frame
-
         cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[0]));
 
         //gaussian blur
@@ -453,6 +498,98 @@ namespace BADVideo {
 
           }
         }
+
+        return nullptr;
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      void calcIntensityAverages() {
+        for (int i = 0; i < numFrames; ++i) {
+          int j = 0;
+          IplImage* img = normalizeIplImage(newVideoFrames[i]);
+          for (int y=0; y < videoHeight; ++y) {
+            float* ptr = (float*) (img->imageData + y * img->widthStep);
+            for (int x=0; x < videoWidth; ++x) {
+              intensity_averages[j++] += ptr[x*3];
+              intensity_averages[j++] += ptr[x*3+1];
+              intensity_averages[j++] += ptr[x*3+2];
+            }
+          }
+        }
+
+        int length = videoHeight * videoWidth * 3;
+        for (int i = 0; i < length; ++i) {
+          intensity_averages[i] /= (float) numFrames;
+        }
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      float calcMaxVideoIntensity() {
+        float max = 0.0;
+        for (int i=0; i < numFrames; ++i) {
+          float imgMax = calcMaxImageIntensity(newVideoFrames[i]);
+          if (imgMax > max) {
+            max = imgMax;
+          }
+        }
+        return max;
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      float calcMaxImageIntensity(IplImage* img) {
+        float max = 0.0;
+        for (int y=0; y < videoHeight; ++y) {
+          float* ptr = (float*) (img->imageData + y * img->widthStep);
+          for (int x=0; x < videoWidth; ++x) {
+            for (int i=0; i < 3; ++i) {
+              if (max < ptr[x*3+i]) {
+                max = ptr[x*3+i];
+              }
+            }
+          }
+        }
+        return max;
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      IplImage* brightenImage(IplImage* img, float gain) {
+        float* bright_vals = new float[videoWidth*videoHeight*3];
+        int j = 0;
+        for (int y=0; y < videoHeight; ++y) {
+          float* ptr = (float*) (img->imageData + y * img->widthStep);
+          for (int x=0; x < videoWidth; ++x) {
+            for (int i=0; i < 3; ++i) {
+              bright_vals[j++] = ptr[x*3+i] * gain;
+            }
+          }
+        }
+
+        cv::Mat mat(videoHeight, videoWidth, CV_32FC3, bright_vals);
+        return new IplImage(mat);
       }
 
 
@@ -461,7 +598,7 @@ namespace BADVideo {
 
       /*
         for (int y=0; y < height; ++y) {
-          uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
+          float* ptr = (float*) (img->imageData + y * img->widthStep);
           for (int x=0; x < width; ++x) {
 
           }
