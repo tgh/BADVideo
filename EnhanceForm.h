@@ -26,7 +26,7 @@ namespace BADVideo {
       return (int) trackBar1->Value;
     }
 
-    int getNumFramesToAvg() {
+    int getTemporalMargin() {
       return (int) numericUpDown1->Value;
     }
 
