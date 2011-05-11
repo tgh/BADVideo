@@ -245,13 +245,6 @@ namespace BADVideo {
 
         /* DEBUG: Show image of average of all frames */
 
-        calcIntensityAverages();
-        cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
-        IplImage* temp = new IplImage(avgIntensitiesMatrix);
-        float maxI = calcMaxImageIntensity(temp);
-        float maxGain = (((float) 1.0) / maxI) * (float) 3.0;
-
-
         //create the Enhance dialog window
         EnhanceForm^ eForm = gcnew EnhanceForm(numFrames/10);
         //open the Enhance dialog
@@ -264,6 +257,12 @@ namespace BADVideo {
         int numFramesToAvg = eForm->getNumFramesToAvg();
         int gainFactor = eForm->getGainValue();
         float gain = (float) gainFactor / (float) 100.0;
+
+        calcIntensityAverages();
+        cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
+        IplImage* temp = new IplImage(avgIntensitiesMatrix);
+        //float maxI = calcMaxImageIntensity(temp);
+        //float maxGain = (((float) 1.0) / maxI) * (float) 3.0;
 
         IplImage* temp2 = brightenImage(temp, gain);
 

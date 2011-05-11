@@ -51,6 +51,7 @@ namespace BADVideo {
   private: System::Windows::Forms::GroupBox^  groupBox2;
   private: System::Windows::Forms::Label^  label2;
   private: System::Windows::Forms::NumericUpDown^  numericUpDown1;
+  private: System::Windows::Forms::Label^  label4;
 
   protected: 
 
@@ -74,6 +75,7 @@ namespace BADVideo {
       this->button1 = (gcnew System::Windows::Forms::Button());
       this->button2 = (gcnew System::Windows::Forms::Button());
       this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
+      this->label4 = (gcnew System::Windows::Forms::Label());
       this->label2 = (gcnew System::Windows::Forms::Label());
       this->numericUpDown1 = (gcnew System::Windows::Forms::NumericUpDown());
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBar1))->BeginInit();
@@ -88,7 +90,7 @@ namespace BADVideo {
       this->trackBar1->Location = System::Drawing::Point(6, 42);
       this->trackBar1->Maximum = 300;
       this->trackBar1->Name = L"trackBar1";
-      this->trackBar1->Size = System::Drawing::Size(343, 45);
+      this->trackBar1->Size = System::Drawing::Size(435, 45);
       this->trackBar1->SmallChange = 20;
       this->trackBar1->TabIndex = 1;
       this->trackBar1->TickFrequency = 10;
@@ -100,9 +102,9 @@ namespace BADVideo {
       this->groupBox1->Controls->Add(this->label3);
       this->groupBox1->Controls->Add(this->label1);
       this->groupBox1->Controls->Add(this->trackBar1);
-      this->groupBox1->Location = System::Drawing::Point(16, 70);
+      this->groupBox1->Location = System::Drawing::Point(15, 105);
       this->groupBox1->Name = L"groupBox1";
-      this->groupBox1->Size = System::Drawing::Size(355, 93);
+      this->groupBox1->Size = System::Drawing::Size(451, 93);
       this->groupBox1->TabIndex = 2;
       this->groupBox1->TabStop = false;
       // 
@@ -122,7 +124,7 @@ namespace BADVideo {
       this->label1->AutoSize = true;
       this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
         static_cast<System::Byte>(0)));
-      this->label1->Location = System::Drawing::Point(122, 16);
+      this->label1->Location = System::Drawing::Point(151, 16);
       this->label1->Name = L"label1";
       this->label1->Size = System::Drawing::Size(17, 17);
       this->label1->TabIndex = 2;
@@ -131,7 +133,7 @@ namespace BADVideo {
       // button1
       // 
       this->button1->DialogResult = System::Windows::Forms::DialogResult::OK;
-      this->button1->Location = System::Drawing::Point(215, 179);
+      this->button1->Location = System::Drawing::Point(310, 213);
       this->button1->Name = L"button1";
       this->button1->Size = System::Drawing::Size(75, 23);
       this->button1->TabIndex = 3;
@@ -141,7 +143,7 @@ namespace BADVideo {
       // button2
       // 
       this->button2->DialogResult = System::Windows::Forms::DialogResult::Cancel;
-      this->button2->Location = System::Drawing::Point(296, 179);
+      this->button2->Location = System::Drawing::Point(391, 213);
       this->button2->Name = L"button2";
       this->button2->Size = System::Drawing::Size(75, 23);
       this->button2->TabIndex = 4;
@@ -150,13 +152,27 @@ namespace BADVideo {
       // 
       // groupBox2
       // 
+      this->groupBox2->Controls->Add(this->label4);
       this->groupBox2->Controls->Add(this->label2);
       this->groupBox2->Controls->Add(this->numericUpDown1);
       this->groupBox2->Location = System::Drawing::Point(15, 13);
       this->groupBox2->Name = L"groupBox2";
-      this->groupBox2->Size = System::Drawing::Size(356, 51);
+      this->groupBox2->Size = System::Drawing::Size(452, 86);
       this->groupBox2->TabIndex = 5;
       this->groupBox2->TabStop = false;
+      // 
+      // label4
+      // 
+      this->label4->AutoSize = true;
+      this->label4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+        static_cast<System::Byte>(0)));
+      this->label4->Location = System::Drawing::Point(7, 60);
+      this->label4->Name = L"label4";
+      this->label4->Size = System::Drawing::Size(436, 13);
+      this->label4->TabIndex = 2;
+      this->label4->Text = L" * Number of frames before and after the processing frame with which to average t" 
+        L"he pixels.";
+      this->label4->Click += gcnew System::EventHandler(this, &EnhanceForm::label4_Click);
       // 
       // label2
       // 
@@ -165,22 +181,23 @@ namespace BADVideo {
         static_cast<System::Byte>(0)));
       this->label2->Location = System::Drawing::Point(6, 16);
       this->label2->Name = L"label2";
-      this->label2->Size = System::Drawing::Size(285, 17);
+      this->label2->Size = System::Drawing::Size(124, 17);
       this->label2->TabIndex = 1;
-      this->label2->Text = L"Number of frames to average for each pixel:";
+      this->label2->Text = L"Temporal margin*:";
       // 
       // numericUpDown1
       // 
-      this->numericUpDown1->Location = System::Drawing::Point(297, 16);
+      this->numericUpDown1->Location = System::Drawing::Point(136, 16);
       this->numericUpDown1->Name = L"numericUpDown1";
-      this->numericUpDown1->Size = System::Drawing::Size(44, 20);
+      this->numericUpDown1->Size = System::Drawing::Size(47, 20);
       this->numericUpDown1->TabIndex = 0;
+      this->numericUpDown1->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
       // 
       // EnhanceForm
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
       this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-      this->ClientSize = System::Drawing::Size(382, 212);
+      this->ClientSize = System::Drawing::Size(479, 245);
       this->Controls->Add(this->groupBox2);
       this->Controls->Add(this->button2);
       this->Controls->Add(this->button1);
