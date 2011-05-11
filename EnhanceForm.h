@@ -45,13 +45,14 @@ namespace BADVideo {
   protected: 
   private: System::Windows::Forms::GroupBox^  groupBox1;
   private: System::Windows::Forms::Label^  label3;
-  private: System::Windows::Forms::Label^  label1;
+
   private: System::Windows::Forms::Button^  button1;
   private: System::Windows::Forms::Button^  button2;
   private: System::Windows::Forms::GroupBox^  groupBox2;
   private: System::Windows::Forms::Label^  label2;
   private: System::Windows::Forms::NumericUpDown^  numericUpDown1;
   private: System::Windows::Forms::Label^  label4;
+  private: System::Windows::Forms::TextBox^  textBox1;
 
   protected: 
 
@@ -70,8 +71,8 @@ namespace BADVideo {
 		{
       this->trackBar1 = (gcnew System::Windows::Forms::TrackBar());
       this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
+      this->textBox1 = (gcnew System::Windows::Forms::TextBox());
       this->label3 = (gcnew System::Windows::Forms::Label());
-      this->label1 = (gcnew System::Windows::Forms::Label());
       this->button1 = (gcnew System::Windows::Forms::Button());
       this->button2 = (gcnew System::Windows::Forms::Button());
       this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
@@ -99,14 +100,24 @@ namespace BADVideo {
       // 
       // groupBox1
       // 
+      this->groupBox1->Controls->Add(this->textBox1);
       this->groupBox1->Controls->Add(this->label3);
-      this->groupBox1->Controls->Add(this->label1);
       this->groupBox1->Controls->Add(this->trackBar1);
       this->groupBox1->Location = System::Drawing::Point(15, 105);
       this->groupBox1->Name = L"groupBox1";
       this->groupBox1->Size = System::Drawing::Size(451, 93);
       this->groupBox1->TabIndex = 2;
       this->groupBox1->TabStop = false;
+      // 
+      // textBox1
+      // 
+      this->textBox1->Location = System::Drawing::Point(136, 16);
+      this->textBox1->Name = L"textBox1";
+      this->textBox1->Size = System::Drawing::Size(47, 20);
+      this->textBox1->TabIndex = 4;
+      this->textBox1->Text = L"0";
+      this->textBox1->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+      this->textBox1->TextChanged += gcnew System::EventHandler(this, &EnhanceForm::textBox1_TextChanged);
       // 
       // label3
       // 
@@ -118,17 +129,6 @@ namespace BADVideo {
       this->label3->Size = System::Drawing::Size(110, 17);
       this->label3->TabIndex = 3;
       this->label3->Text = L"Brightness gain:";
-      // 
-      // label1
-      // 
-      this->label1->AutoSize = true;
-      this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
-        static_cast<System::Byte>(0)));
-      this->label1->Location = System::Drawing::Point(151, 16);
-      this->label1->Name = L"label1";
-      this->label1->Size = System::Drawing::Size(17, 17);
-      this->label1->TabIndex = 2;
-      this->label1->Text = L"0";
       // 
       // button1
       // 
@@ -216,7 +216,27 @@ namespace BADVideo {
     }
 #pragma endregion
   private: System::Void trackBar1_Scroll(System::Object^  sender, System::EventArgs^  e) {
-             label1->Text = "" + trackBar1->Value;
+             textBox1->Text = "" + trackBar1->Value;
            }
+private: System::Void textBox1_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+           int val = 0;
+           try {
+            val = Convert::ToInt32(textBox1->Text);
+           }
+           catch (FormatException^ fe) {
+             textBox1->Text = "0";
+           }
+           if (val > 300) {
+             textBox1->Text = "300";
+             trackBar1->Value = 300;
+           }
+           else if (val < 0) {
+             textBox1->Text = "0";
+             trackBar1->Value = 0;
+           }
+           else {
+             trackBar1->Value = val;
+           }
+         }
 };
 }
