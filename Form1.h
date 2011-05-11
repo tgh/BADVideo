@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <cv.h>
 #include <highgui.h>
+#include "EnhanceForm.h"
 
 namespace BADVideo {
 
@@ -242,20 +243,29 @@ namespace BADVideo {
           return;
         }
 
-        //show the progress bar for enhancing the video
-        progressBar1->Visible = true;
-        progressBar1->Value = 0;
-        progressBar1->Maximum = numFrames;
-
-
         /* DEBUG: Show image of average of all frames */
 
         calcIntensityAverages();
         cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
         IplImage* temp = new IplImage(avgIntensitiesMatrix);
         float maxI = calcMaxImageIntensity(temp);
-        float gain = ((float) 1.0) / maxI;
-        IplImage* temp2 = brightenImage(temp, 3.0);
+        float maxGain = (((float) 1.0) / maxI) * (float) 3.0;
+
+
+        //create the Enhance dialog window
+        EnhanceForm^ eForm = gcnew EnhanceForm(numFrames/10);
+        //open the Enhance dialog
+        System::Windows::Forms::DialogResult dr = eForm->ShowDialog();
+        //user clicked Cancel, get out
+        if (dr == System::Windows::Forms::DialogResult::Cancel) {
+          return;
+        }
+        //get the values that the user chose for frame count and gain
+        int numFramesToAvg = eForm->getNumFramesToAvg();
+        int gainFactor = eForm->getGainValue();
+        float gain = (float) gainFactor / (float) 100.0;
+
+        IplImage* temp2 = brightenImage(temp, gain);
 
         CvCapture* videoCapture = cvCreateFileCapture("C:\\Users\\tgh_2\\Desktop\\workspace\\visual\ studio\ 2010\\Projects\\BADVideo\\BADVideo\\1_(correctly_exposed).avi");
         IplImage* goal = cvQueryFrame(videoCapture);
@@ -307,6 +317,11 @@ namespace BADVideo {
         return;
 
         /* END Debug */
+
+        //show the progress bar for enhancing the video
+        progressBar1->Visible = true;
+        progressBar1->Value = 0;
+        progressBar1->Maximum = numFrames;
 
         for(int i=0; i < numFrames; ++i) {
           //extract the luminance from the frame
