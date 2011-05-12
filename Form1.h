@@ -147,6 +147,7 @@ namespace BADVideo {
             newVideoFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
           }
 
+          /*
           //initialize the max luminance values array
           int length = videoWidth * videoHeight;
           max_lum_vals = new float[length];
@@ -160,6 +161,7 @@ namespace BADVideo {
           for (int i=0; i < numFrames; ++i) {
             intensity_averages[i] = (float) 0.0;
           }
+          */
         }
 
       }// OPEN
@@ -237,13 +239,11 @@ namespace BADVideo {
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^ e) {
         //unshow the "Done." label (if already showing)
         DoneLabel->Visible = false;
-        //assertion failed: video does not have 3 channels
-        if (newVideoFrames[0]->nChannels != 3) {
-          MessageBox::Show("This is not a 3-channel video, as was expected.  I can't help you.", "Sorry.");
+        //a video file hasn't been opened yet
+        if (newVideoFrames == nullptr) {
+          MessageBox::Show("You need to open a video file first.", "Sorry.");
           return;
         }
-
-        /* DEBUG: Show image of average of all frames */
 
         //create the Enhance dialog window
         EnhanceForm^ eForm = gcnew EnhanceForm(numFrames/10);
@@ -254,9 +254,15 @@ namespace BADVideo {
           return;
         }
         //get the values that the user chose for frame count and gain
-        int numFramesToAvg = eForm->getNumFramesToAvg();
+        int temporalMargin = eForm->getTemporalMargin();
         int gainFactor = eForm->getGainValue();
         float gain = (float) gainFactor / (float) 100.0;
+
+        brightenAndDenoise(temporalMargin, gain);
+        MessageBox::Show("Done.");
+        return;
+
+        /* DEBUG: Show image of average of all frames
 
         calcIntensityAverages();
         cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
@@ -405,7 +411,7 @@ namespace BADVideo {
 
         //create a matrix with the values
         cv::Mat luminanceMatrix(height, width, CV_32FC1, lum_vals);
-
+        delete lum_vals;
         //convert matrix of luminance values into an image
         return new IplImage(luminanceMatrix);
 
@@ -447,6 +453,7 @@ namespace BADVideo {
 
         //create a matrix with the values
         cv::Mat gainMatrix(height, width, CV_32FC1, gain_vals);
+        delete gain_vals;
         //convert matrix of gain values into an image
         return new IplImage(gainMatrix);
 
@@ -475,8 +482,17 @@ namespace BADVideo {
 
         //create a matrix with the values
         cv::Mat matrix(videoHeight, videoWidth, CV_32FC3, normalizedVals);
+        IplImage* normalizedImage = new IplImage(matrix);
+        /*
+        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
+        cvShowImage("orig",normalizedImage);
+        cvWaitKey(0);
+        cvDestroyWindow("orig");
+        */
+        IplImage* temp = cvCloneImage(normalizedImage);
+        delete normalizedVals;
         //convert the matrix into an image
-        return new IplImage(matrix);
+        return temp;
 
       }// normalizeIplImage(IplImage*)
 
@@ -603,6 +619,7 @@ namespace BADVideo {
         }
 
         cv::Mat mat(videoHeight, videoWidth, CV_32FC3, bright_vals);
+        delete bright_vals;
         return new IplImage(mat);
       }
 
@@ -617,11 +634,13 @@ namespace BADVideo {
         //an array to hold the pixel channel values across the temporal plain
         // in order to average them
         int avgArrayLength = temporalMargin * 2 + 1;
-        float* avgArray    = new float[avgArrayLength];
+        uchar* avgArray    = new uchar[avgArrayLength];
         //an array to hold the final brightened and denoised values for each
         // frame
         int imgArrayLength = videoHeight * videoWidth * 3;
-        float* imgArray    = new float[imgArrayLength];
+        uchar* imgArray    = new uchar[imgArrayLength];
+
+        FILE * fp = fopen("log.txt", "w");
 
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
@@ -641,7 +660,7 @@ namespace BADVideo {
           }
 
           int imgIndex = 0;
-          //process each row of pixels...
+          //process each row of the frame...
           for (int y=0; y < videoHeight; ++y) {
             //process each pixel in the row...
             for (int x=0; x < videoWidth; ++x) {
@@ -651,23 +670,32 @@ namespace BADVideo {
                 //get the values of this channel from the other frames within
                 // the temporal margin
                 for (int j=start; j < end; ++j, ++avgIndex) {
+                  //avgArray[avgIndex] = getValue(normalizeIplImage(newVideoFrames[j]), y, x, c);
                   avgArray[avgIndex] = getValue(newVideoFrames[j], y, x, c);
                 }
                 //calculate the average of these values
-                float average = calcAverage(avgArray, avgArrayLength);
+                uchar average = calcAverage(avgArray, avgArrayLength);
                 //apply the brightness gain factor to the average
-                imgArray[imgIndex] = average * gain;
+                int val = average * gain;
+                if (val > 255) {
+                  val = 255;
+                }
+                imgArray[imgIndex] = (uchar) val;
               }
             }
           }
 
           //create a new image with the brightened and denoised values
-          cv::Mat mat(videoHeight, videoWidth, CV_32FC3, imgArray);
+          cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
           IplImage* temp = new IplImage(mat);
           //copy this image to the global result image array
           newVideoFrames[i] = cvCloneImage(temp);
           delete temp;
         }
+
+        delete imgArray;
+        delete avgArray;
+        fclose(fp);
       }
 
 
@@ -677,8 +705,8 @@ namespace BADVideo {
       ///<summary>
       ///
       ///<\summary>
-      float getValue(IplImage* img, int y, int x, int c) {
-        float* ptr = (float*) (img->imageData + y * img->widthStep);
+      uchar getValue(IplImage* img, int y, int x, int c) {
+        uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
         return ptr[x*3+c];
       }
 
@@ -689,12 +717,12 @@ namespace BADVideo {
       ///<summary>
       ///
       ///</summary>
-      float calcAverage(float* arr, int len) {
-        float sum = 0.0;
+      uchar calcAverage(uchar* arr, int len) {
+        int sum = 0;
         for (int i=0; i < len; ++i) {
           sum += arr[i];
         }
-        return (float) sum / len;
+        return (uchar) (sum / len);
       }
 
 
