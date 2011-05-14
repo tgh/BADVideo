@@ -4,6 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 #include "EnhanceForm.h"
+#include "ProgressDialog.h"
 
 namespace BADVideo {
 
@@ -237,8 +238,6 @@ namespace BADVideo {
       ///On click of ENHANCE icon, process the stored video.
       ///</summary>
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^ e) {
-        //unshow the "Done." label (if already showing)
-        DoneLabel->Visible = false;
         //a video file hasn't been opened yet
         if (newVideoFrames == nullptr) {
           MessageBox::Show("You need to open a video file first.", "Sorry.");
@@ -259,7 +258,6 @@ namespace BADVideo {
         float gain = (float) gainFactor / (float) 100.0;
 
         brightenAndDenoise(temporalMargin, gain);
-        MessageBox::Show("Done.");
         return;
 
         /* DEBUG: Show image of average of all frames
@@ -323,11 +321,6 @@ namespace BADVideo {
 
         /* END Debug */
 
-        //show the progress bar for enhancing the video
-        progressBar1->Visible = true;
-        progressBar1->Value = 0;
-        progressBar1->Maximum = numFrames;
-
         for(int i=0; i < numFrames; ++i) {
           //extract the luminance from the frame
           //cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
@@ -348,9 +341,7 @@ namespace BADVideo {
           bilateralFilter(enhancedMatrix, tempMatrix, 9, 100.0, 10.0);
           //newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
           newVideoFrames[i] = cvCloneImage(new IplImage(tempMatrix));
-          progressBar1->Increment(1);
         }
-        DoneLabel->Visible = true;
 
       }// ENHANCE
       
@@ -631,6 +622,10 @@ namespace BADVideo {
       ///
       ///</summary>
       void brightenAndDenoise(int temporalMargin, float gain) {
+        //open the progress dialog window
+        ProgressDialog^ progress = gcnew ProgressDialog(videoHeight*numFrames);
+        progress->Show();
+
         //an array to hold the pixel channel values across the temporal plain
         // in order to average them
         int avgArrayLength = temporalMargin * 2 + 1;
@@ -639,8 +634,6 @@ namespace BADVideo {
         // frame
         int imgArrayLength = videoHeight * videoWidth * 3;
         uchar* imgArray    = new uchar[imgArrayLength];
-
-        FILE * fp = fopen("log.txt", "w");
 
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
@@ -683,6 +676,8 @@ namespace BADVideo {
                 imgArray[imgIndex] = (uchar) val;
               }
             }
+            //increment the progress bar
+            progress->increment();
           }
 
           //create a new image with the brightened and denoised values
@@ -693,9 +688,10 @@ namespace BADVideo {
           delete temp;
         }
 
+        delete progress;
+        MessageBox::Show("Done.","Enhance");
         delete imgArray;
         delete avgArray;
-        fclose(fp);
       }
 
 
@@ -760,8 +756,8 @@ namespace BADVideo {
 		  /// </summary>
 		  System::ComponentModel::Container ^components;
 
-      System::Windows::Forms::ProgressBar^  progressBar1;
-      System::Windows::Forms::Label^  DoneLabel;
+
+
 	    System::Windows::Forms::PictureBox^  SaveImageButton;
 	    System::Windows::Forms::Label^  OpenLabel;
 	    System::Windows::Forms::PictureBox^  PreviewImageButton;
@@ -796,8 +792,6 @@ namespace BADVideo {
         this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
-        this->progressBar1 = (gcnew System::Windows::Forms::ProgressBar());
-        this->DoneLabel = (gcnew System::Windows::Forms::Label());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -928,35 +922,12 @@ namespace BADVideo {
         this->saveFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
         this->saveFileDialog1->Title = L"Save As...";
         // 
-        // progressBar1
-        // 
-        this->progressBar1->Location = System::Drawing::Point(174, 99);
-        this->progressBar1->Name = L"progressBar1";
-        this->progressBar1->Size = System::Drawing::Size(154, 23);
-        this->progressBar1->TabIndex = 11;
-        this->progressBar1->Visible = false;
-        // 
-        // DoneLabel
-        // 
-        this->DoneLabel->AutoSize = true;
-        this->DoneLabel->Font = (gcnew System::Drawing::Font(L"Georgia", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
-          static_cast<System::Byte>(0)));
-        this->DoneLabel->ForeColor = System::Drawing::Color::Green;
-        this->DoneLabel->Location = System::Drawing::Point(171, 125);
-        this->DoneLabel->Name = L"DoneLabel";
-        this->DoneLabel->Size = System::Drawing::Size(43, 14);
-        this->DoneLabel->TabIndex = 12;
-        this->DoneLabel->Text = L"Done.";
-        this->DoneLabel->Visible = false;
-        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
         this->BackColor = System::Drawing::SystemColors::Control;
-        this->ClientSize = System::Drawing::Size(340, 368);
-        this->Controls->Add(this->DoneLabel);
-        this->Controls->Add(this->progressBar1);
+        this->ClientSize = System::Drawing::Size(201, 368);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
         this->Controls->Add(this->ExitLabel);
