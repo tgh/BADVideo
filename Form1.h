@@ -176,15 +176,23 @@ namespace BADVideo {
       ///enhanced version of the original.
       ///</summary>
       System::Void PreviewImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //check to see if the video has been enhanced--if not, only the original
+        // video will be played back
+        bool enhanced = true;
+        if (newVideoFrames == nullptr)
+          enhanced = false;
+
         //convert String^ to char* for the original video filename (for opencv)
         const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
 
         //create viewing windows for the original and enhanced videos
         cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
-        cvNamedWindow("Enhanced", CV_WINDOW_AUTOSIZE);
+        if (enhanced)
+          cvNamedWindow("Enhanced", CV_WINDOW_AUTOSIZE);
         //position the windows side-by-side
         cvMoveWindow("Original", this->Location.X + this->Size.Width + 10, this->Location.Y);
-        cvMoveWindow("Enhanced", this->Location.X + this->Size.Width + videoWidth + 20, this->Location.Y);
+        if (enhanced)
+          cvMoveWindow("Enhanced", this->Location.X + this->Size.Width + videoWidth + 20, this->Location.Y);
 
         //capture object for the original video
         CvCapture* videoCapture = cvCreateFileCapture(fileName);
@@ -204,7 +212,8 @@ namespace BADVideo {
 
             //display the current frame of each video
             cvShowImage("Original", frame);
-            cvShowImage("Enhanced", newVideoFrames[i]);
+            if (enhanced)
+              cvShowImage("Enhanced", newVideoFrames[i]);
 
             //check for keystroke at each frame (assuming frames per second (fps) is 30)
             char c = cvWaitKey(33);
@@ -226,7 +235,8 @@ namespace BADVideo {
         //free allocated memory used by opencv
         cvReleaseCapture(&videoCapture);
         cvDestroyWindow("Original");
-        cvDestroyWindow("Enhanced");
+        if (enhanced)
+          cvDestroyWindow("Enhanced");
       
       }// PREVIEW
 
