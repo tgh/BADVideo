@@ -702,12 +702,13 @@ namespace BADVideo {
                 //get the values of this channel from the other frames within
                 // the temporal margin
                 for (int j=start; j < end; ++j, ++avgIndex) {
-                  avgArray[avgIndex] = getValue(originalFrames[j], y, x, c);
+                  uchar channelVal = getValue(originalFrames[j], y, x, c);
+                  insert(avgArray, channelVal, 0, avgIndex);
                 }
                 //calculate the average of these values
-                uchar average = calcAverage(avgArray, avgArrayLength);
+                uchar median = calcMedian(avgArray, avgArrayLength);
                 //apply the brightness gain factor to the average
-                int val = average * gain;
+                int val = median * gain;
                 if (val > 255) {
                   val = 255;
                 }
@@ -725,7 +726,6 @@ namespace BADVideo {
           //increment the progress bar
           progress->increment();
         }
-
         MessageBox::Show("Done.","Enhance");
         delete imgArray;
         delete avgArray;
@@ -757,6 +757,44 @@ namespace BADVideo {
           sum += arr[i];
         }
         return (uchar) (sum / len);
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      void insert(uchar* arr, uchar val, int start, int stop) {
+        for(int i=start; i <= stop; ++i) {
+          if (i == stop) {
+            arr[i] = val;
+            return;
+          }
+          if (val < arr[i]) {
+            uchar temp = arr[i];
+            arr[i] = val;
+            insert(arr, temp, i+1, stop);
+            return;
+          }
+        }
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      uchar calcMedian(uchar* arr, int len) {
+        int i = len/2;
+        if (len % 2 != 0) {
+          return arr[i];
+        }
+        int temp = arr[i-1]+arr[i];
+        return (uchar) (temp/2);
       }
 
 
