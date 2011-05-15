@@ -4,7 +4,6 @@
 #include <cv.h>
 #include <highgui.h>
 #include "EnhanceForm.h"
-#include "ProgressDialog.h"
 
 namespace BADVideo {
 
@@ -54,7 +53,7 @@ namespace BADVideo {
 
       ///holds the max luminosity values for each pixel across all frames
       float* max_lum_vals;
-  private: System::Windows::Forms::Label^  FileNameLabel;
+
 
       ///holds the average intensity values for each channel of each pixel for
       /// all frames
@@ -289,6 +288,8 @@ namespace BADVideo {
         float gain = (float) gainFactor / (float) 100.0;
 
         brightenAndDenoise(temporalMargin, gain);
+
+        MessageBox::Show("Done.");
         return;
 
         /* DEBUG: Show image of average of all frames
@@ -658,10 +659,6 @@ namespace BADVideo {
       ///
       ///</summary>
       void brightenAndDenoise(int temporalMargin, float gain) {
-        //open the progress dialog window
-        ProgressDialog^ progress = gcnew ProgressDialog(numFrames);
-        progress->Show();
-
         //an array to hold the pixel channel values across the temporal plain
         // in order to average them
         int avgArrayLength = temporalMargin * 2 + 1;
@@ -724,12 +721,10 @@ namespace BADVideo {
           enhancedFrames[i] = cvCloneImage(temp);
           delete temp;
           //increment the progress bar
-          progress->increment();
+
         }
-        MessageBox::Show("Done.","Enhance");
         delete imgArray;
         delete avgArray;
-        delete progress;
       }
 
 
@@ -846,6 +841,7 @@ namespace BADVideo {
       System::Windows::Forms::PictureBox^  EnhanceImageButton;
       System::Windows::Forms::Label^  EnhanceLabel;
       System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
+      System::Windows::Forms::Label^  FileNameLabel;
 
 
 
