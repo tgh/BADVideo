@@ -33,9 +33,12 @@ namespace BADVideo {
       ///the full path filename of the opened video
       String^ videoFileName;
 
-      ///an array of images (frames) to hold a copy of the original video that
-      /// will then be used to process and become the enhanced video output
-      IplImage** newVideoFrames;
+      ///an array of images (frames) to hold a copy of the original video
+      IplImage** originalFrames;
+
+      ///an array of images (frames) to hold the enhanced version of the
+      /// original video
+      IplImage** enhancedFrames;
 
       ///frames per second of the video
       double fps;
@@ -51,6 +54,7 @@ namespace BADVideo {
 
       ///holds the max luminosity values for each pixel across all frames
       float* max_lum_vals;
+  private: System::Windows::Forms::Label^  FileNameLabel;
 
       ///holds the average intensity values for each channel of each pixel for
       /// all frames
@@ -71,8 +75,9 @@ namespace BADVideo {
 			  InitializeComponent();
 
         //set custom fields to default values
-			  videoFileName = nullptr;
-        newVideoFrames = nullptr;
+			  videoFileName  = nullptr;
+        originalFrames = nullptr;
+        enhancedFrames = nullptr;
         fps = 0.0;
         videoWidth = 0;
         videoHeight = 0;
@@ -91,8 +96,11 @@ namespace BADVideo {
 			  if (components) {
 				  delete components;
 			  }
-        if (newVideoFrames) {
-          delete newVideoFrames;
+        if (originalFrames) {
+          delete originalFrames;
+        }
+        if(enhancedFrames) {
+          delete enhancedFrames;
         }
 		  }
 
@@ -127,7 +135,8 @@ namespace BADVideo {
           String^ shortFileName = videoFileName->Substring(idx+1);
 
           //show the filename in the form
-          this->Text = "BADVideo - " + shortFileName;
+          FileNameLabel->Visible = true;
+          FileNameLabel->Text = shortFileName;
 
           //convert String^ to char* for opencv
           const char * fileName = (char*)Marshal::StringToHGlobalAnsi(videoFileName).ToPointer();
@@ -142,10 +151,22 @@ namespace BADVideo {
           // (subtract 1, because it seems the last frame is null, but is
           // included in the frame count)
           numFrames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
-          newVideoFrames = new IplImage*[numFrames];
-          //store the frames of the video for later use
+
+          //reset original frames array
+          if (originalFrames != nullptr) {
+            delete originalFrames;
+            originalFrames = nullptr;
+          }
+          //reset enhanced frames array
+          if (enhancedFrames != nullptr) {
+            delete enhancedFrames;
+            enhancedFrames = nullptr;
+          }
+
+          //get all of the original frames to use for processing later
+          originalFrames = new IplImage*[numFrames];
           for (int i=0; i < numFrames; ++i) {
-            newVideoFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
+            originalFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
           }
 
           /*
@@ -179,7 +200,7 @@ namespace BADVideo {
         //check to see if the video has been enhanced--if not, only the original
         // video will be played back
         bool enhanced = true;
-        if (newVideoFrames == nullptr)
+        if (enhancedFrames == nullptr)
           enhanced = false;
 
         //convert String^ to char* for the original video filename (for opencv)
@@ -213,7 +234,7 @@ namespace BADVideo {
             //display the current frame of each video
             cvShowImage("Original", frame);
             if (enhanced)
-              cvShowImage("Enhanced", newVideoFrames[i]);
+              cvShowImage("Enhanced", enhancedFrames[i]);
 
             //check for keystroke at each frame (assuming frames per second (fps) is 30)
             char c = cvWaitKey(33);
@@ -249,7 +270,7 @@ namespace BADVideo {
       ///</summary>
       System::Void EnhanceImageButton_Click(System::Object^  sender, System::EventArgs^ e) {
         //a video file hasn't been opened yet
-        if (newVideoFrames == nullptr) {
+        if (videoFileName == nullptr) {
           MessageBox::Show("You need to open a video file first.", "Sorry.");
           return;
         }
@@ -331,13 +352,13 @@ namespace BADVideo {
 
         /* END Debug */
 
+        /*
         for(int i=0; i < numFrames; ++i) {
           //extract the luminance from the frame
           //cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
           cv::Mat enhancedMatrix(normalizeIplImage(newVideoFrames[i]));
           cv::Mat tempMatrix(videoHeight, videoWidth, CV_32FC3);
 
-          /*
           //apply a smooth filter to the luminance-only image
           try {
             cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
@@ -346,12 +367,12 @@ namespace BADVideo {
             MessageBox::Show("The dimensional sizes of the gaussian kernel must be odd positive numbers.","Error");
             return;
           }
-          */
 
           bilateralFilter(enhancedMatrix, tempMatrix, 9, 100.0, 10.0);
           //newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
           newVideoFrames[i] = cvCloneImage(new IplImage(tempMatrix));
         }
+        */
 
       }// ENHANCE
       
@@ -363,6 +384,11 @@ namespace BADVideo {
       ///On click of SAVE icon, the enhanced video is written out to a file.
       ///</summary>
       System::Void SaveImageButton_Click(System::Object^  sender, System::EventArgs^  e) {
+        //video hasn't been enhanced
+        if (enhancedFrames == nullptr) {
+          MessageBox::Show("Video hasn't been enhanced yet.", "Can't save");
+          return;
+        }
         //user hit OK (i.e. did not cancel the operation)
         if (saveFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
           //get the filename that the user entered
@@ -372,7 +398,7 @@ namespace BADVideo {
           CvVideoWriter* writer = cvCreateVideoWriter(fileName, CV_FOURCC('P','I','M','1'), fps, videoSize);
           //write every frame
           for (int i=0; i < numFrames; ++i) {
-            cvWriteFrame(writer, newVideoFrames[i]);
+            cvWriteFrame(writer, enhancedFrames[i]);
           }
           //cleanup
           cvReleaseVideoWriter(&writer);
@@ -543,7 +569,7 @@ namespace BADVideo {
       void calcIntensityAverages() {
         for (int i = 0; i < numFrames; ++i) {
           int j = 0;
-          IplImage* img = normalizeIplImage(newVideoFrames[i]);
+          IplImage* img = normalizeIplImage(originalFrames[i]);
           for (int y=0; y < videoHeight; ++y) {
             float* ptr = (float*) (img->imageData + y * img->widthStep);
             for (int x=0; x < videoWidth; ++x) {
@@ -570,7 +596,7 @@ namespace BADVideo {
       float calcMaxVideoIntensity() {
         float max = 0.0;
         for (int i=0; i < numFrames; ++i) {
-          float imgMax = calcMaxImageIntensity(newVideoFrames[i]);
+          float imgMax = calcMaxImageIntensity(originalFrames[i]);
           if (imgMax > max) {
             max = imgMax;
           }
@@ -633,7 +659,7 @@ namespace BADVideo {
       ///</summary>
       void brightenAndDenoise(int temporalMargin, float gain) {
         //open the progress dialog window
-        ProgressDialog^ progress = gcnew ProgressDialog(videoHeight*numFrames);
+        ProgressDialog^ progress = gcnew ProgressDialog(numFrames);
         progress->Show();
 
         //an array to hold the pixel channel values across the temporal plain
@@ -644,6 +670,9 @@ namespace BADVideo {
         // frame
         int imgArrayLength = videoHeight * videoWidth * 3;
         uchar* imgArray    = new uchar[imgArrayLength];
+
+        //allocate the enhanced frames
+        enhancedFrames = new IplImage*[numFrames];
 
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
@@ -673,8 +702,7 @@ namespace BADVideo {
                 //get the values of this channel from the other frames within
                 // the temporal margin
                 for (int j=start; j < end; ++j, ++avgIndex) {
-                  //avgArray[avgIndex] = getValue(normalizeIplImage(newVideoFrames[j]), y, x, c);
-                  avgArray[avgIndex] = getValue(newVideoFrames[j], y, x, c);
+                  avgArray[avgIndex] = getValue(originalFrames[j], y, x, c);
                 }
                 //calculate the average of these values
                 uchar average = calcAverage(avgArray, avgArrayLength);
@@ -686,22 +714,22 @@ namespace BADVideo {
                 imgArray[imgIndex] = (uchar) val;
               }
             }
-            //increment the progress bar
-            progress->increment();
           }
 
           //create a new image with the brightened and denoised values
           cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
           IplImage* temp = new IplImage(mat);
           //copy this image to the global result image array
-          newVideoFrames[i] = cvCloneImage(temp);
+          enhancedFrames[i] = cvCloneImage(temp);
           delete temp;
+          //increment the progress bar
+          progress->increment();
         }
 
-        delete progress;
         MessageBox::Show("Done.","Enhance");
         delete imgArray;
         delete avgArray;
+        delete progress;
       }
 
 
@@ -802,6 +830,7 @@ namespace BADVideo {
         this->EnhanceImageButton = (gcnew System::Windows::Forms::PictureBox());
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
+        this->FileNameLabel = (gcnew System::Windows::Forms::Label());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -812,7 +841,7 @@ namespace BADVideo {
         // SaveImageButton
         // 
         this->SaveImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"SaveImageButton.Image")));
-        this->SaveImageButton->Location = System::Drawing::Point(12, 222);
+        this->SaveImageButton->Location = System::Drawing::Point(12, 250);
         this->SaveImageButton->Name = L"SaveImageButton";
         this->SaveImageButton->Size = System::Drawing::Size(64, 64);
         this->SaveImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -825,7 +854,7 @@ namespace BADVideo {
         this->OpenLabel->AutoSize = true;
         this->OpenLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->OpenLabel->Location = System::Drawing::Point(82, 33);
+        this->OpenLabel->Location = System::Drawing::Point(82, 61);
         this->OpenLabel->Name = L"OpenLabel";
         this->OpenLabel->Size = System::Drawing::Size(61, 23);
         this->OpenLabel->TabIndex = 1;
@@ -834,7 +863,7 @@ namespace BADVideo {
         // PreviewImageButton
         // 
         this->PreviewImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"PreviewImageButton.Image")));
-        this->PreviewImageButton->Location = System::Drawing::Point(12, 152);
+        this->PreviewImageButton->Location = System::Drawing::Point(12, 180);
         this->PreviewImageButton->Name = L"PreviewImageButton";
         this->PreviewImageButton->Size = System::Drawing::Size(64, 64);
         this->PreviewImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -847,7 +876,7 @@ namespace BADVideo {
         this->PreviewLabel->AutoSize = true;
         this->PreviewLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->PreviewLabel->Location = System::Drawing::Point(82, 172);
+        this->PreviewLabel->Location = System::Drawing::Point(82, 200);
         this->PreviewLabel->Name = L"PreviewLabel";
         this->PreviewLabel->Size = System::Drawing::Size(77, 23);
         this->PreviewLabel->TabIndex = 3;
@@ -856,7 +885,7 @@ namespace BADVideo {
         // OpenImageButton
         // 
         this->OpenImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"OpenImageButton.Image")));
-        this->OpenImageButton->Location = System::Drawing::Point(12, 12);
+        this->OpenImageButton->Location = System::Drawing::Point(12, 40);
         this->OpenImageButton->Name = L"OpenImageButton";
         this->OpenImageButton->Size = System::Drawing::Size(64, 64);
         this->OpenImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -869,7 +898,7 @@ namespace BADVideo {
         this->SaveLabel->AutoSize = true;
         this->SaveLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->SaveLabel->Location = System::Drawing::Point(82, 240);
+        this->SaveLabel->Location = System::Drawing::Point(82, 268);
         this->SaveLabel->Name = L"SaveLabel";
         this->SaveLabel->Size = System::Drawing::Size(52, 23);
         this->SaveLabel->TabIndex = 5;
@@ -878,7 +907,7 @@ namespace BADVideo {
         // exitImageButton
         // 
         this->exitImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"exitImageButton.Image")));
-        this->exitImageButton->Location = System::Drawing::Point(12, 292);
+        this->exitImageButton->Location = System::Drawing::Point(12, 320);
         this->exitImageButton->Name = L"exitImageButton";
         this->exitImageButton->Size = System::Drawing::Size(64, 64);
         this->exitImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -891,7 +920,7 @@ namespace BADVideo {
         this->ExitLabel->AutoSize = true;
         this->ExitLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->ExitLabel->Location = System::Drawing::Point(82, 318);
+        this->ExitLabel->Location = System::Drawing::Point(82, 346);
         this->ExitLabel->Name = L"ExitLabel";
         this->ExitLabel->Size = System::Drawing::Size(47, 23);
         this->ExitLabel->TabIndex = 7;
@@ -907,7 +936,7 @@ namespace BADVideo {
         // EnhanceImageButton
         // 
         this->EnhanceImageButton->Image = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"EnhanceImageButton.Image")));
-        this->EnhanceImageButton->Location = System::Drawing::Point(12, 82);
+        this->EnhanceImageButton->Location = System::Drawing::Point(12, 110);
         this->EnhanceImageButton->Name = L"EnhanceImageButton";
         this->EnhanceImageButton->Size = System::Drawing::Size(64, 59);
         this->EnhanceImageButton->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
@@ -920,7 +949,7 @@ namespace BADVideo {
         this->EnhanceLabel->AutoSize = true;
         this->EnhanceLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
           static_cast<System::Byte>(0)));
-        this->EnhanceLabel->Location = System::Drawing::Point(82, 99);
+        this->EnhanceLabel->Location = System::Drawing::Point(82, 127);
         this->EnhanceLabel->Name = L"EnhanceLabel";
         this->EnhanceLabel->Size = System::Drawing::Size(86, 23);
         this->EnhanceLabel->TabIndex = 9;
@@ -932,12 +961,23 @@ namespace BADVideo {
         this->saveFileDialog1->InitialDirectory = L"C:\\Users\\tgh_2\\Desktop\\workspace\\visual studio 2010\\Projects\\BADVideo\\BADVideo\\";
         this->saveFileDialog1->Title = L"Save As...";
         // 
+        // FileNameLabel
+        // 
+        this->FileNameLabel->AutoSize = true;
+        this->FileNameLabel->Location = System::Drawing::Point(12, 13);
+        this->FileNameLabel->Name = L"FileNameLabel";
+        this->FileNameLabel->Size = System::Drawing::Size(35, 13);
+        this->FileNameLabel->TabIndex = 10;
+        this->FileNameLabel->Text = L"label1";
+        this->FileNameLabel->Visible = false;
+        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
         this->BackColor = System::Drawing::SystemColors::Control;
-        this->ClientSize = System::Drawing::Size(201, 368);
+        this->ClientSize = System::Drawing::Size(222, 393);
+        this->Controls->Add(this->FileNameLabel);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
         this->Controls->Add(this->ExitLabel);
