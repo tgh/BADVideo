@@ -51,13 +51,7 @@ namespace BADVideo {
       ///total number of frames in the video (also length of the frame array)
       int numFrames;
 
-      ///holds the max luminosity values for each pixel across all frames
-      float* max_lum_vals;
-
-
-      ///holds the average intensity values for each channel of each pixel for
-      /// all frames
-      float* intensity_averages;
+  private: System::Windows::Forms::ProgressBar^  progressBar1;
 
 
     //------------------------------------------------------------------------
@@ -81,7 +75,6 @@ namespace BADVideo {
         videoWidth = 0;
         videoHeight = 0;
         numFrames = 0;
-        max_lum_vals = nullptr;
 		  }
 
 
@@ -167,22 +160,6 @@ namespace BADVideo {
           for (int i=0; i < numFrames; ++i) {
             originalFrames[i] = cvCloneImage(cvQueryFrame(videoCapture));
           }
-
-          /*
-          //initialize the max luminance values array
-          int length = videoWidth * videoHeight;
-          max_lum_vals = new float[length];
-          for (int i=0; i < length; ++i) {
-            max_lum_vals[i] = (float) 0.0;
-          }
-
-          //initialize the average intenisty values array
-          length *= 3;
-          intensity_averages = new float[videoWidth*videoHeight*3];
-          for (int i=0; i < numFrames; ++i) {
-            intensity_averages[i] = (float) 0.0;
-          }
-          */
         }
 
       }// OPEN
@@ -290,8 +267,43 @@ namespace BADVideo {
         brightenAndDenoise(temporalMargin, gain);
 
         MessageBox::Show("Done.");
-        return;
 
+        progressBar1->Value = 0;
+        progressBar1->Maximum = numFrames;
+        progressBar1->Visible = true;
+
+        for (int i=0; i < numFrames; ++i) {
+          cv::Mat eMat(enhancedFrames[i]);
+          cv::Mat tMat(videoHeight, videoWidth, CV_8UC3);
+          bilateralFilter(eMat, tMat, 5, 150.0, 20.0);
+          IplImage* temp = new IplImage(tMat);
+          enhancedFrames[i] = cvCloneImage(temp);
+          delete temp;
+          progressBar1->Increment(1);
+        }
+
+        progressBar1->Visible = false;
+
+        MessageBox::Show("Done.");
+
+        /*
+        cv::Mat eMat(enhancedFrames[0]);
+        cv::Mat tMat(videoHeight, videoWidth, CV_8UC3);
+        bilateralFilter(eMat, tMat, 5, 150.0, 20.0);
+        IplImage* temp = new IplImage(tMat);
+        //create windows
+        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
+        cvShowImage("orig",enhancedFrames[0]);
+        cvNamedWindow("result", CV_WINDOW_AUTOSIZE);
+        cvShowImage("result", temp);
+        //wait for a keystroke...
+        cvWaitKey(0);
+        //destroy windows
+        cvDestroyWindow("orig");
+        cvDestroyWindow("result");
+        delete temp;
+        return;
+        */
         /* DEBUG: Show image of average of all frames
 
         calcIntensityAverages();
@@ -408,86 +420,6 @@ namespace BADVideo {
       }// SAVE
 
 
-      //------------------------------------------------------------------------
-
-
-      ///<summary>
-      ///Extracts the luminance of an image and returns it as a new image, not
-      /// modifying the original.  It is assumed the IplImage is of type
-      /// CV_32FC3.
-      ///</summary>
-      IplImage* getLuminanceAsImage(IplImage * img) {
-        int width  = img->width;
-        int height = img->height;
-        int len    = width * height;
-        float * lum_vals = new float[len];    //to store the luminance values
-
-        //extract the luminance values from the image pixel by pixel
-        int j=0;
-        for (int y=0; y < height; ++y) {
-          float* ptr = (float*) (img->imageData + y * img->widthStep);
-          for (int x=0; x < width; ++x) {
-            //convert RGB values to luminance
-            lum_vals[j] = (float) (0.2126 * ptr[3*x] + 0.7152 * ptr[3*x+1] + 0.0722 * ptr[3*x+2]);
-            //see if this is the maximum luminance value for this pixel seen so far
-            if (max_lum_vals[j] < lum_vals[j]) {
-              max_lum_vals[j] = lum_vals[j];
-            }
-            ++j;
-          }
-        }
-
-        //create a matrix with the values
-        cv::Mat luminanceMatrix(height, width, CV_32FC1, lum_vals);
-        delete lum_vals;
-        //convert matrix of luminance values into an image
-        return new IplImage(luminanceMatrix);
-
-      }// getLuminanceAsImage(IplImage*)
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///
-      ///</summary>
-      IplImage* m(IplImage* img, int psi) {
-        int width  = img->width;
-        int height = img->height;
-        int len    = width * height;
-        float* gain_vals = new float[len];  //to store the gain factor values
-
-        cv::Mat maxLumMatrix(height, width, CV_32FC1, max_lum_vals);
-        IplImage* maxLumImg = new IplImage(maxLumMatrix);
-
-        //estimate gain factors for each pixel
-        int i=0;
-        for (int y=0; y < height; ++y) {
-          float* imgPtr = (float*) (img->imageData + y * img->widthStep);
-          float* maxPtr = (float*) (maxLumImg->imageData + y * maxLumImg->widthStep);
-          for (int x=0; x < width; ++x) {
-            if (maxPtr[x] != 0) {
-              gain_vals[i] = (float) ((log((long double)((imgPtr[x]/maxPtr[x])*(psi-1) + 1.0) / log((long double)psi))));
-            }
-            else {
-              gain_vals[i] = (float) 0.0;
-            }
-            ++i;
-          }
-        }
-
-        delete maxLumImg;
-
-        //create a matrix with the values
-        cv::Mat gainMatrix(height, width, CV_32FC1, gain_vals);
-        delete gain_vals;
-        //convert matrix of gain values into an image
-        return new IplImage(gainMatrix);
-
-      }// m(IplImage*, int)
-
-
       //----------------------------------------------------------------------
 
 
@@ -523,133 +455,6 @@ namespace BADVideo {
         return temp;
 
       }// normalizeIplImage(IplImage*)
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///The spatial bilateral filter.  It is assumed the IplImage is of type
-      /// CV_32FC3.
-      ///</summary>
-      IplImage* B(IplImage* img, double sigma_h, double simgma_i, int kernel_radius) {
-        int height_stop = img->height - kernel_radius;
-        int width_stop  = img->width  - kernel_radius;
-        int widthStep   = img->widthStep;
-
-        //row by row for each kernel center pixel, s
-        for (int y = kernel_radius; y < height_stop; ++y) {
-          float* s = (float*) (img->imageData + y * widthStep);
-          //column by column for each kernel center pixel, s
-          for (int x = kernel_radius; x < width_stop; ++x) {
-            float sum_numerator   = 0.0;
-            float sum_denominator = 0.0;
-            //row by row for each neighborhood pixel, p
-            for (int i = y - kernel_radius; i < y + kernel_radius; ++i) {
-              float* p = (float*) (img->imageData + i * widthStep);
-              //column by column for each neighborhood pixel, p
-              for (int j = x - kernel_radius; j < x + kernel_radius; ++j) {
-                //sum_numerator   += g(dist(i, j), sigma_h) * g(D(I(p), I(s)), sigma_i) * I(p);
-                //sum_denominator += g(dist(i, j), sigma_h) * g(D(I(p), I(s)), sigma_i);
-              }
-            }
-
-          }
-        }
-
-        return nullptr;
-      }
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///
-      ///</summary>
-      void calcIntensityAverages() {
-        for (int i = 0; i < numFrames; ++i) {
-          int j = 0;
-          IplImage* img = normalizeIplImage(originalFrames[i]);
-          for (int y=0; y < videoHeight; ++y) {
-            float* ptr = (float*) (img->imageData + y * img->widthStep);
-            for (int x=0; x < videoWidth; ++x) {
-              intensity_averages[j++] += ptr[x*3];
-              intensity_averages[j++] += ptr[x*3+1];
-              intensity_averages[j++] += ptr[x*3+2];
-            }
-          }
-        }
-
-        int length = videoHeight * videoWidth * 3;
-        for (int i = 0; i < length; ++i) {
-          intensity_averages[i] /= (float) numFrames;
-        }
-      }
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///
-      ///</summary>
-      float calcMaxVideoIntensity() {
-        float max = 0.0;
-        for (int i=0; i < numFrames; ++i) {
-          float imgMax = calcMaxImageIntensity(originalFrames[i]);
-          if (imgMax > max) {
-            max = imgMax;
-          }
-        }
-        return max;
-      }
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///
-      ///</summary>
-      float calcMaxImageIntensity(IplImage* img) {
-        float max = 0.0;
-        for (int y=0; y < videoHeight; ++y) {
-          float* ptr = (float*) (img->imageData + y * img->widthStep);
-          for (int x=0; x < videoWidth; ++x) {
-            for (int i=0; i < 3; ++i) {
-              if (max < ptr[x*3+i]) {
-                max = ptr[x*3+i];
-              }
-            }
-          }
-        }
-        return max;
-      }
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
-      ///
-      ///</summary>
-      IplImage* brightenImage(IplImage* img, float gain) {
-        float* bright_vals = new float[videoWidth*videoHeight*3];
-        int j = 0;
-        for (int y=0; y < videoHeight; ++y) {
-          float* ptr = (float*) (img->imageData + y * img->widthStep);
-          for (int x=0; x < videoWidth; ++x) {
-            for (int i=0; i < 3; ++i) {
-              bright_vals[j++] = ptr[x*3+i] * gain;
-            }
-          }
-        }
-
-        cv::Mat mat(videoHeight, videoWidth, CV_32FC3, bright_vals);
-        delete bright_vals;
-        return new IplImage(mat);
-      }
 
 
       //----------------------------------------------------------------------
@@ -725,6 +530,7 @@ namespace BADVideo {
         }
         delete imgArray;
         delete avgArray;
+        delete originalFrames;
       }
 
 
@@ -865,6 +671,7 @@ namespace BADVideo {
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
         this->FileNameLabel = (gcnew System::Windows::Forms::Label());
+        this->progressBar1 = (gcnew System::Windows::Forms::ProgressBar());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -1005,12 +812,20 @@ namespace BADVideo {
         this->FileNameLabel->Text = L"label1";
         this->FileNameLabel->Visible = false;
         // 
+        // progressBar1
+        // 
+        this->progressBar1->Location = System::Drawing::Point(175, 126);
+        this->progressBar1->Name = L"progressBar1";
+        this->progressBar1->Size = System::Drawing::Size(43, 23);
+        this->progressBar1->TabIndex = 11;
+        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
         this->BackColor = System::Drawing::SystemColors::Control;
         this->ClientSize = System::Drawing::Size(222, 393);
+        this->Controls->Add(this->progressBar1);
         this->Controls->Add(this->FileNameLabel);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
