@@ -267,7 +267,7 @@ namespace BADVideo {
         brightenAndDenoise(temporalMargin, gain);
 
         MessageBox::Show("Done.");
-
+        /*
         progressBar1->Value = 0;
         progressBar1->Maximum = numFrames;
         progressBar1->Visible = true;
@@ -275,7 +275,7 @@ namespace BADVideo {
         for (int i=0; i < numFrames; ++i) {
           cv::Mat eMat(enhancedFrames[i]);
           cv::Mat tMat(videoHeight, videoWidth, CV_8UC3);
-          bilateralFilter(eMat, tMat, 5, 150.0, 20.0);
+          bilateralFilter(eMat, tMat, 5, 50.0, 10.0);
           IplImage* temp = new IplImage(tMat);
           enhancedFrames[i] = cvCloneImage(temp);
           delete temp;
@@ -285,6 +285,7 @@ namespace BADVideo {
         progressBar1->Visible = false;
 
         MessageBox::Show("Done.");
+        */
 
         /*
         cv::Mat eMat(enhancedFrames[0]);
@@ -472,6 +473,13 @@ namespace BADVideo {
         // frame
         int imgArrayLength = videoHeight * videoWidth * 3;
         uchar* imgArray    = new uchar[imgArrayLength];
+        
+        int count    = 0; //how many values processed so far
+        int sumRange = 0; //current sum of value ranges
+        int sumRangeSquared = 0; //current sum of squared range values
+        unsigned int avgRange = 0xffffffff; //the average range of values per
+                                            // pixel channel across temporal plain
+        int std_dev  = 0; //standard deviation of the temporal range values
 
         //allocate the enhanced frames
         enhancedFrames = new IplImage*[numFrames];
@@ -507,13 +515,36 @@ namespace BADVideo {
                   uchar channelVal = getValue(originalFrames[j], y, x, c);
                   insert(avgArray, channelVal, 0, avgIndex);
                 }
-                //calculate the average of these values
-                uchar median = calcMedian(avgArray, avgArrayLength);
-                //apply the brightness gain factor to the average
+                //calculate the range of the temporal values
+                unsigned int range = avgArray[avgArrayLength-1] - avgArray[0];
+
+                uchar median;   //value with which the gain (brightness) will be applied
+
+                //range is greater than average + 1 standard deviation (probably moving object)
+                if (range > (avgRange + std_dev) && y >= 3 && y < 477 && x >= 3 && x < 637) {
+                  //use spatial median filter
+                  median = medianFilter(originalFrames[i], y, x, c);
+                }
+                //otherwise, use temporal median
+                else {
+                  //update the average temporal value range
+                  sumRange += range;
+                  sumRangeSquared += range * range;
+                  ++count;
+                  avgRange = (int) (sumRange / count);
+                  if (count > 1)
+                    std_dev = (int) sqrt((double) ((sumRangeSquared - sumRange*sumRange) / (count-1)));
+
+                  //calculate the median of the temporal values
+                  median = calcMedian(avgArray, avgArrayLength);
+                }
+
+                //apply the brightness gain factor to the median
                 int val = median * gain;
                 if (val > 255) {
                   val = 255;
                 }
+
                 imgArray[imgIndex] = (uchar) val;
               }
             }
@@ -530,7 +561,6 @@ namespace BADVideo {
         }
         delete imgArray;
         delete avgArray;
-        delete originalFrames;
       }
 
 
@@ -596,6 +626,31 @@ namespace BADVideo {
         }
         int temp = arr[i-1]+arr[i];
         return (uchar) (temp/2);
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      uchar medianFilter(IplImage* img, int y, int x, int c) {
+        uchar arr[49];
+
+        for (int i=0; i < 49; ++i)
+          arr[i] = 0;
+
+        int i = 0;
+        for (int row = y-3; row <= y+3; ++row) {
+          uchar* ptr = (uchar*) (img->imageData + row * img->widthStep);
+          for (int col = x-3; col <= x+3; ++col) {
+            insert(arr, ptr[x*3+c], 0, i);
+            ++i;
+          }
+        }
+
+        return calcMedian(arr, 49);
       }
 
 
