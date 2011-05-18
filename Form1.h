@@ -51,8 +51,6 @@ namespace BADVideo {
       ///total number of frames in the video (also length of the frame array)
       int numFrames;
 
-  private: System::Windows::Forms::ProgressBar^  progressBar1;
-
 
     //------------------------------------------------------------------------
     //------------------     CONSTRUCTORS/DESTRUCTOR     ---------------------
@@ -443,16 +441,11 @@ namespace BADVideo {
 
         //create a matrix with the values
         cv::Mat matrix(videoHeight, videoWidth, CV_32FC3, normalizedVals);
+        //create an image with the matrix
         IplImage* normalizedImage = new IplImage(matrix);
-        /*
-        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
-        cvShowImage("orig",normalizedImage);
-        cvWaitKey(0);
-        cvDestroyWindow("orig");
-        */
+        //copy the image
         IplImage* temp = cvCloneImage(normalizedImage);
         delete normalizedVals;
-        //convert the matrix into an image
         return temp;
 
       }// normalizeIplImage(IplImage*)
@@ -474,15 +467,20 @@ namespace BADVideo {
         int imgArrayLength = videoHeight * videoWidth * 3;
         uchar* imgArray    = new uchar[imgArrayLength];
         
-        int count    = 0; //how many values processed so far
-        int sumRange = 0; //current sum of value ranges
-        int sumRangeSquared = 0; //current sum of squared range values
+        unsigned int count    = 0; //how many values processed so far
+        unsigned int sumRange = 0; //current sum of value ranges
         unsigned int avgRange = 0xffffffff; //the average range of values per
                                             // pixel channel across temporal plain
-        int std_dev  = 0; //standard deviation of the temporal range values
+        unsigned int rangeCount = 0;
+        unsigned int maxRange = 0;
+
+        int kernel_radius = 2;
 
         //allocate the enhanced frames
         enhancedFrames = new IplImage*[numFrames];
+
+        int count2 = 0;
+        //FILE * fp = fopen("log.txt", "w");
 
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
@@ -518,25 +516,51 @@ namespace BADVideo {
                 //calculate the range of the temporal values
                 unsigned int range = avgArray[avgArrayLength-1] - avgArray[0];
 
+                if (range > maxRange)
+                  maxRange = range;
+
+                //if (range > 50)
+                //  fprintf(fp, "i: %d, y: %d, x: %d, c: %d\n", i, y, x, c);
+                
+                /*
+                if (i == 68 && y == 164 && x == 443 && c == 0) {
+                  fprintf(fp, "[");
+                  for (int q=0; q < avgArrayLength; ++q) {
+                    if (q < avgArrayLength - 1)
+                      fprintf(fp, "%d, ", avgArray[q]);
+                    else
+                      fprintf(fp, "%d]\n", avgArray[q]);
+                  }
+                }
+                */
+
                 uchar median;   //value with which the gain (brightness) will be applied
 
-                //range is greater than average + 1 standard deviation (probably moving object)
-                if (range > (avgRange + std_dev) && y >= 3 && y < 477 && x >= 3 && x < 637) {
-                  //use spatial median filter
-                  median = medianFilter(originalFrames[i], y, x, c);
+                //range is greater than average (probably moving object)
+                if (range > 0 && range > (unsigned int) (3*avgRange) && y >= kernel_radius
+                    && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
+                    && rangeCount > videoWidth) {
+                  ++count2;
+                  //use spatial bilateral filter
+                  median = bilateralFilter(originalFrames[i], y, x, c, kernel_radius, 20, 20);
                 }
                 //otherwise, use temporal median
                 else {
-                  //update the average temporal value range
-                  sumRange += range;
-                  sumRangeSquared += range * range;
-                  ++count;
-                  avgRange = (int) (sumRange / count);
-                  if (count > 1)
-                    std_dev = (int) sqrt((double) ((sumRangeSquared - sumRange*sumRange) / (count-1)));
+                  if (range != 0) {
+                    ++rangeCount;
+                    //update the average temporal value range
+                    sumRange += range;
+                    ++count;
+                    avgRange = (unsigned int) (sumRange / count);
 
-                  //calculate the median of the temporal values
-                  median = calcMedian(avgArray, avgArrayLength);
+                    //calculate the median of the temporal values
+                    median = calcMedian(avgArray, avgArrayLength);
+                  }
+                  else {
+                    median = avgArray[0];
+                  }
+                  //if (i == 30 && y == 270)
+                  //  fprintf(fp, ", avgRange: %d\n", avgRange);
                 }
 
                 //apply the brightness gain factor to the median
@@ -559,6 +583,8 @@ namespace BADVideo {
           //increment the progress bar
 
         }
+        //MessageBox::Show("Spatial count: " + count2 + ", average range: " + avgRange + ", max range: " + maxRange);
+        //fclose(fp);
         delete imgArray;
         delete avgArray;
       }
@@ -635,22 +661,86 @@ namespace BADVideo {
       ///<summary>
       ///
       ///</summary>
-      uchar medianFilter(IplImage* img, int y, int x, int c) {
-        uchar arr[49];
+      uchar medianFilter(IplImage* img, int y, int x, int c, int k_radius) {
+        int len = (k_radius*2+1) * (k_radius*2+1);
+        uchar* arr = new uchar[len];
 
-        for (int i=0; i < 49; ++i)
+        for (int i=0; i < len; ++i)
           arr[i] = 0;
 
         int i = 0;
-        for (int row = y-3; row <= y+3; ++row) {
+        for (int row = y-k_radius; row <= y+k_radius; ++row) {
           uchar* ptr = (uchar*) (img->imageData + row * img->widthStep);
-          for (int col = x-3; col <= x+3; ++col) {
+          for (int col = x-k_radius; col <= x+k_radius; ++col) {
             insert(arr, ptr[x*3+c], 0, i);
             ++i;
           }
         }
 
-        return calcMedian(arr, 49);
+        uchar median = calcMedian(arr, len);
+        delete arr;
+        return median;
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      uchar bilateralFilter(IplImage* img, int y, int x, int c, int k_radius, int sigma_d, int sigma_r) {
+        double k   = 0.0;  //the k(x) value in the bilateral filter formula
+        double sum = 0.0;  //the summation in the bilatral filter formula
+
+        //get the (normalized) value of the image's pixel's channel of interest
+        uchar* cntPtr = (uchar*) img->imageData + y * img->widthStep;
+        double center_val = (double)cntPtr[x*3+c];
+
+        //for each neighbor of the center...
+        for (int row = y-k_radius; row <= y+k_radius; ++row) {
+          uchar* ptr = (uchar*) (img->imageData + row * img->widthStep);
+          for (int col = x-k_radius; col <= x+k_radius; ++col) {
+            //grab the neighbor's channel value
+            double neighbor_val = (double)ptr[col*3+c];
+            //skip over the center pixel
+            if (row == y && col == x)
+              continue;
+            //calculate the spatial distance between neighbor and center
+            double delta_d = euclideanDistance(row, col, y, x);
+            //calculate intensity difference between neighbor value and center value
+            double delta_r = abs(center_val - neighbor_val);
+            //apply the bilateral filter formula
+            double calculation = exp(pow((double)(delta_d/sigma_d), 2)*(-0.5)) * exp(pow((double)(delta_r/sigma_r), 2)*(-0.5));
+            //update k and summation
+            k += calculation;
+            sum += calculation * neighbor_val;
+          }
+        }
+
+        return (uchar) round(sum/k);
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      inline double euclideanDistance(int y1, int x1, int y2, int x2) {
+        return sqrt((double)(pow((double)(x2-x1),2)+pow((double)(y2-y1),2)));
+      }
+
+
+      //----------------------------------------------------------------------
+
+
+      ///<summary>
+      ///
+      ///</summary>
+      inline double round(double x) {
+        return ((x - floor(x)) >= 0.5) ? ceil(x) : floor(x);
       }
 
 
@@ -671,6 +761,11 @@ namespace BADVideo {
             
           }
         }
+
+        cvNamedWindow("image",CV_WINDOW_AUTOSIZE);
+        cvShowImage("image",img);
+        cvWaitKey(0);
+        cvDestroyWindow("image");
       */
 
     //end of "Hand-written code (not auto-generated)" region
@@ -726,7 +821,6 @@ namespace BADVideo {
         this->EnhanceLabel = (gcnew System::Windows::Forms::Label());
         this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
         this->FileNameLabel = (gcnew System::Windows::Forms::Label());
-        this->progressBar1 = (gcnew System::Windows::Forms::ProgressBar());
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->SaveImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->PreviewImageButton))->BeginInit();
         (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->OpenImageButton))->BeginInit();
@@ -867,20 +961,12 @@ namespace BADVideo {
         this->FileNameLabel->Text = L"label1";
         this->FileNameLabel->Visible = false;
         // 
-        // progressBar1
-        // 
-        this->progressBar1->Location = System::Drawing::Point(175, 126);
-        this->progressBar1->Name = L"progressBar1";
-        this->progressBar1->Size = System::Drawing::Size(43, 23);
-        this->progressBar1->TabIndex = 11;
-        // 
         // Form1
         // 
         this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
         this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
         this->BackColor = System::Drawing::SystemColors::Control;
         this->ClientSize = System::Drawing::Size(222, 393);
-        this->Controls->Add(this->progressBar1);
         this->Controls->Add(this->FileNameLabel);
         this->Controls->Add(this->EnhanceLabel);
         this->Controls->Add(this->EnhanceImageButton);
