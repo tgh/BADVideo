@@ -257,6 +257,7 @@ namespace BADVideo {
         if (dr == System::Windows::Forms::DialogResult::Cancel) {
           return;
         }
+
         //get the values that the user chose in the Enhance dialog window
         int temporalMargin = eForm->getTemporalMargin();
         int gainFactor = eForm->getGainValue();
@@ -266,129 +267,7 @@ namespace BADVideo {
         float gain = (float) gainFactor / (float) 100.0;
 
         brightenAndDenoise(temporalMargin, kernel_radius, sigma_d, sigma_r, gain);
-
         MessageBox::Show("Done.");
-        /*
-        progressBar1->Value = 0;
-        progressBar1->Maximum = numFrames;
-        progressBar1->Visible = true;
-
-        for (int i=0; i < numFrames; ++i) {
-          cv::Mat eMat(enhancedFrames[i]);
-          cv::Mat tMat(videoHeight, videoWidth, CV_8UC3);
-          bilateralFilter(eMat, tMat, 5, 50.0, 10.0);
-          IplImage* temp = new IplImage(tMat);
-          enhancedFrames[i] = cvCloneImage(temp);
-          delete temp;
-          progressBar1->Increment(1);
-        }
-
-        progressBar1->Visible = false;
-
-        MessageBox::Show("Done.");
-        */
-
-        /*
-        cv::Mat eMat(enhancedFrames[0]);
-        cv::Mat tMat(videoHeight, videoWidth, CV_8UC3);
-        bilateralFilter(eMat, tMat, 5, 150.0, 20.0);
-        IplImage* temp = new IplImage(tMat);
-        //create windows
-        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
-        cvShowImage("orig",enhancedFrames[0]);
-        cvNamedWindow("result", CV_WINDOW_AUTOSIZE);
-        cvShowImage("result", temp);
-        //wait for a keystroke...
-        cvWaitKey(0);
-        //destroy windows
-        cvDestroyWindow("orig");
-        cvDestroyWindow("result");
-        delete temp;
-        return;
-        */
-        /* DEBUG: Show image of average of all frames
-
-        calcIntensityAverages();
-        cv::Mat avgIntensitiesMatrix(videoHeight, videoWidth, CV_32FC3, intensity_averages);
-        IplImage* temp = new IplImage(avgIntensitiesMatrix);
-        //float maxI = calcMaxImageIntensity(temp);
-        //float maxGain = (((float) 1.0) / maxI) * (float) 3.0;
-
-        IplImage* temp2 = brightenImage(temp, gain);
-
-        CvCapture* videoCapture = cvCreateFileCapture("C:\\Users\\tgh_2\\Desktop\\workspace\\visual\ studio\ 2010\\Projects\\BADVideo\\BADVideo\\1_(correctly_exposed).avi");
-        IplImage* goal = cvQueryFrame(videoCapture);
-
-        //create windows
-        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
-        cvShowImage("orig",newVideoFrames[0]);
-        cvNamedWindow("avg",CV_WINDOW_AUTOSIZE);
-        cvShowImage("avg",temp);
-        cvNamedWindow("result", CV_WINDOW_AUTOSIZE);
-        cvShowImage("result", temp2);
-        cvNamedWindow("goal", CV_WINDOW_AUTOSIZE);
-        cvShowImage("goal", goal);
-        //wait for a keystroke...
-        cvWaitKey(0);
-        //destroy windows
-        cvDestroyWindow("orig");
-        cvDestroyWindow("avg");
-        cvDestroyWindow("result");
-        cvDestroyWindow("goal");
-        cvReleaseCapture(&videoCapture);
-        delete temp;
-        delete temp2;
-        return;
-        
-        /* END DEBUG */
-
-
-        /* DEBUG: show results of 1 frame
-
-        //enhance the frame
-        cv::Mat enhancedMatrix(getLuminanceAsImage(newVideoFrames[0]));
-
-        //gaussian blur
-        cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(15,15), 0, 0);
-        IplImage* i = new IplImage(enhancedMatrix);
-
-        //show original frame in a window
-        cvNamedWindow("orig",CV_WINDOW_AUTOSIZE);
-        cvShowImage("orig",newVideoFrames[0]);
-        //show enhanced frame in a window
-        cvNamedWindow("new",CV_WINDOW_AUTOSIZE);
-        cvShowImage("new", i);
-        //wait for a keystroke...
-        cvWaitKey(0);
-        //destroy windows and move on
-        cvDestroyWindow("orig");
-        cvDestroyWindow("new");
-        return;
-
-        /* END Debug */
-
-        /*
-        for(int i=0; i < numFrames; ++i) {
-          //extract the luminance from the frame
-          //cv::Mat enhancedMatrix(getLuminanceAsImage(normalizeIplImage(newVideoFrames[i])));
-          cv::Mat enhancedMatrix(normalizeIplImage(newVideoFrames[i]));
-          cv::Mat tempMatrix(videoHeight, videoWidth, CV_32FC3);
-
-          //apply a smooth filter to the luminance-only image
-          try {
-            cv::GaussianBlur(enhancedMatrix, enhancedMatrix, cv::Size(25,25), 0, 0);
-          }
-          catch (Exception^ e) {
-            MessageBox::Show("The dimensional sizes of the gaussian kernel must be odd positive numbers.","Error");
-            return;
-          }
-
-          bilateralFilter(enhancedMatrix, tempMatrix, 9, 100.0, 10.0);
-          //newVideoFrames[i] = cvCloneImage(m(new IplImage(enhancedMatrix), 64));
-          newVideoFrames[i] = cvCloneImage(new IplImage(tempMatrix));
-        }
-        */
-
       }// ENHANCE
       
 
@@ -426,49 +305,16 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///Takes the given IplImage and returns a normalized version of the
-      ///IplImage.  It is assumed the IplImage is of type CV_8UC3.
-      ///</summary>
-      IplImage* normalizeIplImage(IplImage* img) {
-        float* normalizedVals = new float[videoWidth * videoHeight * 3];
-
-        int i = 0;
-        for (int y=0; y < videoHeight; ++y) {
-          uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
-          for (int x=0; x < videoWidth; ++x) {
-            normalizedVals[i++] = (float) ptr[x*3]   / (float) 255.0;
-            normalizedVals[i++] = (float) ptr[x*3+1] / (float) 255.0;
-            normalizedVals[i++] = (float) ptr[x*3+2] / (float) 255.0;
-          }
-        }
-
-        //create a matrix with the values
-        cv::Mat matrix(videoHeight, videoWidth, CV_32FC3, normalizedVals);
-        //create an image with the matrix
-        IplImage* normalizedImage = new IplImage(matrix);
-        //copy the image
-        IplImage* temp = cvCloneImage(normalizedImage);
-        delete normalizedVals;
-        return temp;
-
-      }// normalizeIplImage(IplImage*)
-
-
-      //----------------------------------------------------------------------
-
-
-      ///<summary>
       ///
       ///</summary>
       void brightenAndDenoise(int temporalMargin, int kernel_radius, int sigma_d, int sigma_r, float gain) {
         //an array to hold the pixel channel values across the temporal plain
-        // in order to average them
-        int avgArrayLength = temporalMargin * 2 + 1;
-        uchar* avgArray    = new uchar[avgArrayLength];
+        int temporalArrLen   = temporalMargin * 2 + 1;
+        uchar* temporalArray = new uchar[temporalArrLen];
         //an array to hold the final brightened and denoised values for each
         // frame
-        int imgArrayLength = videoHeight * videoWidth * 3;
-        uchar* imgArray    = new uchar[imgArrayLength];
+        int imgArrLen   = videoHeight * videoWidth * 3;
+        uchar* imgArray = new uchar[imgArrLen];
         
         unsigned int count    = 0; //how many values processed so far
         unsigned int sumRange = 0; //current sum of value ranges
@@ -479,9 +325,6 @@ namespace BADVideo {
 
         //allocate the enhanced frames
         enhancedFrames = new IplImage*[numFrames];
-
-        int count2 = 0;
-        //FILE * fp = fopen("log.txt", "w");
 
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
@@ -507,47 +350,23 @@ namespace BADVideo {
             for (int x=0; x < videoWidth; ++x) {
               //process each channel of the pixel...
               for (int c=0; c < 3; ++c, ++imgIndex) {
-                int avgIndex = 0;
+                int temporalIndex = 0;  //index into the temporal values array
+                int new_value;  //value with which the gain (brightness) will be applied
+
                 //get the values of this channel from the other frames within
                 // the temporal margin
-                for (int j=start; j < end; ++j, ++avgIndex) {
+                for (int j=start; j < end; ++j, ++temporalIndex) {
                   uchar channelVal = getValue(originalFrames[j], y, x, c);
-                  insert(avgArray, channelVal, 0, avgIndex);
+                  insert(temporalArray, channelVal, 0, temporalIndex);
                 }
                 //calculate the range of the temporal values
-                unsigned int range = avgArray[avgArrayLength-1] - avgArray[0];
+                unsigned int range = temporalArray[temporalArrLen-1] - temporalArray[0];
 
-                //if (range > maxRange)
-                //  maxRange = range;
-
-                //if (range > 50)
-                //  fprintf(fp, "i: %d, y: %d, x: %d, c: %d\n", i, y, x, c);
-                
-                /*
-                if (i == 68 && y == 164 && x == 443 && c == 0) {
-                  fprintf(fp, "[");
-                  for (int q=0; q < avgArrayLength; ++q) {
-                    if (q < avgArrayLength - 1)
-                      fprintf(fp, "%d, ", avgArray[q]);
-                    else
-                      fprintf(fp, "%d]\n", avgArray[q]);
-                  }
-                }
-                */
-
-                int new_value;   //value with which the gain (brightness) will be applied
-
-                //range is greater than average (probably moving object)
+                //range is greater than average (probably moving object), so use spatial bilateral filter
                 if (range > 0 && range > (unsigned int) (3*avgRange) && y >= kernel_radius
                     && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
                     && rangeCount > videoWidth) {
-                  ++count2;
-                  //use spatial bilateral filter
-                  if (y > kernel_radius && y < videoHeight-kernel_radius  && x > kernel_radius
-                      && x < videoWidth-kernel_radius)
-                    new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
-                  else
-                    new_value = getValue(originalFrames[i], y, x, c);
+                  new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
                 }
                 //otherwise, use temporal median
                 else {
@@ -559,13 +378,11 @@ namespace BADVideo {
                     avgRange = (unsigned int) (sumRange / count);
 
                     //calculate the median of the temporal values
-                    new_value = (int) calcMedian(avgArray, avgArrayLength);
+                    new_value = (int) calcMedian(temporalArray, temporalArrLen);
                   }
                   else {
-                    new_value = (int) avgArray[0];
+                    new_value = (int) temporalArray[0];
                   }
-                  //if (i == 30 && y == 270)
-                  //  fprintf(fp, ", avgRange: %d\n", avgRange);
                 }
                 //apply the brightness gain factor to the new value
                 new_value *= gain;
@@ -585,10 +402,8 @@ namespace BADVideo {
           enhancedFrames[i] = cvCloneImage(temp);
           delete temp;
         }
-        //MessageBox::Show("Spatial count: " + count2 + ", average range: " + avgRange + ", max range: " + maxRange);
-        //fclose(fp);
         delete imgArray;
-        delete avgArray;
+        delete temporalArray;
       }
 
 
@@ -748,27 +563,6 @@ namespace BADVideo {
 
       //----------------------------------------------------------------------
 
-
-      /*
-        for (int y=0; y < height; ++y) {
-          float* ptr = (float*) (img->imageData + y * img->widthStep);
-          for (int x=0; x < width; ++x) {
-
-          }
-        }
-
-        for (int row=0; row < mat.rows; ++row) {
-          const float* ptr = (const float*)(mat.data + row * mat.step);
-          for (int col=0; col < mat.cols; ++col) {
-            
-          }
-        }
-
-        cvNamedWindow("image",CV_WINDOW_AUTOSIZE);
-        cvShowImage("image",img);
-        cvWaitKey(0);
-        cvDestroyWindow("image");
-      */
 
     //end of "Hand-written code (not auto-generated)" region
     #pragma endregion
