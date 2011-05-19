@@ -26,12 +26,12 @@ namespace BADVideo {
       kernelNumericUpDown->Value      =   3;
       kernelNumericUpDown->Minimum    =   0;
       kernelNumericUpDown->Maximum    =  10;
-      spatialNumericUpDown->Value     =   3;
+      spatialNumericUpDown->Value     =  25;
       spatialNumericUpDown->Minimum   =   0;
-      spatialNumericUpDown->Maximum   =  30;
-      intensityNumericUpDown->Value   =  30;
+      spatialNumericUpDown->Maximum   =  50;
+      intensityNumericUpDown->Value   =  10;
       intensityNumericUpDown->Minimum =   0;
-      intensityNumericUpDown->Maximum = 200;
+      intensityNumericUpDown->Maximum =  50;
 		}
 
     int getGainValue() {
