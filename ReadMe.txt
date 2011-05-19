@@ -54,6 +54,9 @@ Source code kept under revision control using Git.
   different ways (like image border when doing filters: use first/last frame for
   missing frames, extend missing frames to the other direction (currently using
   this strategy), or wrap around.
+- pixel-channel with the max temporal range (temporal margin of 3)
+	i: 74, y: 164, x: 443, c: 2
+	[99, 119, 156, 159, 162, 162, 164]
   
   
 -------
@@ -61,7 +64,6 @@ Source code kept under revision control using Git.
 -------
 - film a couple more videos (bad and good)
 - implement temporal speed up
-- implement wrap-around temporal ends
 
 
 *******************************************************************************
