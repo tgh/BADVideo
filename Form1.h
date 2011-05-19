@@ -257,12 +257,15 @@ namespace BADVideo {
         if (dr == System::Windows::Forms::DialogResult::Cancel) {
           return;
         }
-        //get the values that the user chose for frame count and gain
+        //get the values that the user chose in the Enhance dialog window
         int temporalMargin = eForm->getTemporalMargin();
         int gainFactor = eForm->getGainValue();
+        int sigma_d = eForm->getSigmaD();
+        int sigma_r = eForm->getSigmaR();
+        int kernel_radius = eForm->getKernelRadius();
         float gain = (float) gainFactor / (float) 100.0;
 
-        brightenAndDenoise(temporalMargin, gain);
+        brightenAndDenoise(temporalMargin, kernel_radius, sigma_d, sigma_r, gain);
 
         MessageBox::Show("Done.");
         /*
@@ -457,7 +460,7 @@ namespace BADVideo {
       ///<summary>
       ///
       ///</summary>
-      void brightenAndDenoise(int temporalMargin, float gain) {
+      void brightenAndDenoise(int temporalMargin, int kernel_radius, int sigma_d, int sigma_r, float gain) {
         //an array to hold the pixel channel values across the temporal plain
         // in order to average them
         int avgArrayLength = temporalMargin * 2 + 1;
@@ -473,8 +476,6 @@ namespace BADVideo {
                                             // pixel channel across temporal plain
         unsigned int rangeCount = 0;
         unsigned int maxRange = 0;
-
-        int kernel_radius = 2;
 
         //allocate the enhanced frames
         enhancedFrames = new IplImage*[numFrames];
@@ -516,8 +517,8 @@ namespace BADVideo {
                 //calculate the range of the temporal values
                 unsigned int range = avgArray[avgArrayLength-1] - avgArray[0];
 
-                if (range > maxRange)
-                  maxRange = range;
+                //if (range > maxRange)
+                //  maxRange = range;
 
                 //if (range > 50)
                 //  fprintf(fp, "i: %d, y: %d, x: %d, c: %d\n", i, y, x, c);
@@ -534,7 +535,7 @@ namespace BADVideo {
                 }
                 */
 
-                uchar median;   //value with which the gain (brightness) will be applied
+                int new_value;   //value with which the gain (brightness) will be applied
 
                 //range is greater than average (probably moving object)
                 if (range > 0 && range > (unsigned int) (3*avgRange) && y >= kernel_radius
@@ -542,7 +543,11 @@ namespace BADVideo {
                     && rangeCount > videoWidth) {
                   ++count2;
                   //use spatial bilateral filter
-                  median = bilateralFilter(originalFrames[i], y, x, c, kernel_radius, 20, 20);
+                  if (y > kernel_radius && y < videoHeight-kernel_radius  && x > kernel_radius
+                      && x < videoWidth-kernel_radius)
+                    new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
+                  else
+                    new_value = getValue(originalFrames[i], y, x, c);
                 }
                 //otherwise, use temporal median
                 else {
@@ -554,22 +559,21 @@ namespace BADVideo {
                     avgRange = (unsigned int) (sumRange / count);
 
                     //calculate the median of the temporal values
-                    median = calcMedian(avgArray, avgArrayLength);
+                    new_value = (int) calcMedian(avgArray, avgArrayLength);
                   }
                   else {
-                    median = avgArray[0];
+                    new_value = (int) avgArray[0];
                   }
                   //if (i == 30 && y == 270)
                   //  fprintf(fp, ", avgRange: %d\n", avgRange);
                 }
-
-                //apply the brightness gain factor to the median
-                int val = median * gain;
-                if (val > 255) {
-                  val = 255;
+                //apply the brightness gain factor to the new value
+                new_value *= gain;
+                if (new_value > 255) {
+                  new_value = 255;
                 }
 
-                imgArray[imgIndex] = (uchar) val;
+                imgArray[imgIndex] = (uchar) new_value;
               }
             }
           }
@@ -580,8 +584,6 @@ namespace BADVideo {
           //copy this image to the global result image array
           enhancedFrames[i] = cvCloneImage(temp);
           delete temp;
-          //increment the progress bar
-
         }
         //MessageBox::Show("Spatial count: " + count2 + ", average range: " + avgRange + ", max range: " + maxRange);
         //fclose(fp);
@@ -954,11 +956,14 @@ namespace BADVideo {
         // FileNameLabel
         // 
         this->FileNameLabel->AutoSize = true;
-        this->FileNameLabel->Location = System::Drawing::Point(12, 13);
+        this->FileNameLabel->Font = (gcnew System::Drawing::Font(L"Constantia", 12, static_cast<System::Drawing::FontStyle>((System::Drawing::FontStyle::Bold | System::Drawing::FontStyle::Underline)), 
+          System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
+        this->FileNameLabel->Location = System::Drawing::Point(12, 9);
         this->FileNameLabel->Name = L"FileNameLabel";
-        this->FileNameLabel->Size = System::Drawing::Size(35, 13);
+        this->FileNameLabel->Size = System::Drawing::Size(53, 19);
         this->FileNameLabel->TabIndex = 10;
         this->FileNameLabel->Text = L"label1";
+        this->FileNameLabel->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
         this->FileNameLabel->Visible = false;
         // 
         // Form1
