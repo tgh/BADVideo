@@ -222,7 +222,12 @@ namespace BADVideo {
               //wait until user hits spacebar again to resume playback
               do {
                 c = cvWaitKey(0);
-              } while (c != 32);
+              } while (c != 32 && c != 27);
+              //user hit 'esc', stop playback
+              if (c == 27) {
+                play = false;
+                break;
+              }
             }
           }
         }
@@ -311,6 +316,7 @@ namespace BADVideo {
         //an array to hold the pixel channel values across the temporal plain
         int temporalArrLen   = temporalMargin * 2 + 1;
         uchar* temporalArray = new uchar[temporalArrLen];
+
         //an array to hold the final brightened and denoised values for each
         // frame
         int imgArrLen   = videoHeight * videoWidth * 3;
@@ -329,19 +335,16 @@ namespace BADVideo {
         //process each frame...
         for (int i=0; i < numFrames; ++i) {
           //initialize start and end frames in the temporal plane
-          int start = i - temporalMargin;
-          int end   = i + temporalMargin + 1;
+          int frameIndex = i - temporalMargin;
 
           //not enough marginal frames before the current frame
           if (i < temporalMargin) {
-            start = 0;
-            end += temporalMargin - i;
+            //set starting frame to the appropriate frame at the end of the video
+            // (wrap around)
+            frameIndex = numFrames - temporalMargin + i;
           }
-          //not enough marginal frames after the current frame
-          else if (i >= numFrames - temporalMargin) {
-            end = numFrames;
-            start -= temporalMargin - (numFrames - i - 1);
-          }
+
+          int tempFrameIndex = frameIndex; //used to reset the frame index
 
           int imgIndex = 0;
           //process each row of the frame...
@@ -350,13 +353,18 @@ namespace BADVideo {
             for (int x=0; x < videoWidth; ++x) {
               //process each channel of the pixel...
               for (int c=0; c < 3; ++c, ++imgIndex) {
-                int temporalIndex = 0;  //index into the temporal values array
                 int new_value;  //value with which the gain (brightness) will be applied
 
                 //get the values of this channel from the other frames within
                 // the temporal margin
-                for (int j=start; j < end; ++j, ++temporalIndex) {
-                  uchar channelVal = getValue(originalFrames[j], y, x, c);
+                frameIndex = tempFrameIndex;
+                for (int temporalIndex=0; temporalIndex < temporalArrLen; ++temporalIndex, ++frameIndex) {
+                  //wrap around to first frame if necessary
+                  if (frameIndex == numFrames)
+                    frameIndex = 0;
+                  //get this pixel's channel value
+                  uchar channelVal = getValue(originalFrames[frameIndex], y, x, c);
+                  //insert the value into the temporal values array in ascending order
                   insert(temporalArray, channelVal, 0, temporalIndex);
                 }
                 //calculate the range of the temporal values
