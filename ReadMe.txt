@@ -23,25 +23,17 @@ videos by implementing the ideas found in two notable research papers:
 	by Elmar Eisemann and Fredo Durand from MIT
 
 	
-------------
- ALGORITHMS
-------------
-//Filtering
-	v = video
-	v' = filtered video
-	for each frame f in v:
-		L = extract luminance channel of f //L = 0.2126*R + 0.7152*G + 0.0722*B
-		L' = Gaussian(L)
-		for each pixel p in L':
-			lambda[p] = m(p,psi)*255 //estimate gain factor to feed into ASTA
-		v'.f = ASTA(x,y,f, lambda, temporalBilatralSigma, spatialBilateralSigma)
+-----------
+ ALGORITHM
+-----------
+
 		
 
 ---------------
  HOW TO USE IT
 ---------------
 1. Click the icon for "Open." and select an .avi file.
-2. Click the icon for "Enhance." and wait for the progress bar to fill.
+2. Click the icon for "Enhance." and enter values for the parameters.
 3. Preview the output if you like by clicking the icon for "Preview."
 4. Save the newly enahnced video by clicking the icon for "Save.".
 
@@ -52,6 +44,24 @@ videos by implementing the ideas found in two notable research papers:
 BADVideo is written in C++/CLI with the OpenCV library using Visual Studio 2010.
 Source code kept under revision control using Git.
 
+
+-------
+ NOTES
+-------
+- temporal average or median can be sped up by only dropping off the oldest
+  value and adding the newest value
+- temporal ends (close to first frame, close to last frame) can be done in
+  different ways (like image border when doing filters: use first/last frame for
+  missing frames, extend missing frames to the other direction (currently using
+  this strategy), or wrap around.
+  
+  
+-------
+ TO DO
+-------
+- film a couple more videos (bad and good)
+- implement temporal speed up
+- implement wrap-around temporal ends
 
 
 *******************************************************************************
