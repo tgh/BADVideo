@@ -133,12 +133,12 @@ namespace BADVideo {
       // 
       // trackBar1
       // 
-      this->trackBar1->LargeChange = 50;
+      this->trackBar1->LargeChange = 100;
       this->trackBar1->Location = System::Drawing::Point(6, 42);
-      this->trackBar1->Maximum = 300;
+      this->trackBar1->Maximum = 500;
       this->trackBar1->Name = L"trackBar1";
       this->trackBar1->Size = System::Drawing::Size(324, 45);
-      this->trackBar1->SmallChange = 20;
+      this->trackBar1->SmallChange = 50;
       this->trackBar1->TabIndex = 1;
       this->trackBar1->TickFrequency = 10;
       this->trackBar1->TickStyle = System::Windows::Forms::TickStyle::TopLeft;
@@ -339,9 +339,9 @@ private: System::Void textBox1_TextChanged(System::Object^  sender, System::Even
            catch (FormatException^ fe) {
              textBox1->Text = "0";
            }
-           if (val > 300) {
-             textBox1->Text = "300";
-             trackBar1->Value = 300;
+           if (val > 500) {
+             textBox1->Text = "500";
+             trackBar1->Value = 500;
            }
            else if (val < 0) {
              textBox1->Text = "0";

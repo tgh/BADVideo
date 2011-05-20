@@ -48,8 +48,10 @@ Source code kept under revision control using Git.
 -------
  NOTES
 -------
-- temporal average or median can be sped up by only dropping off the oldest
-  value and adding the newest value
+- thought about temporal average/median sped up by only dropping off the oldest
+  value and adding the newest value, but can't be done unless you go through the
+  video cube per pixel per channel per frame (rather than per frame per pixel
+  per channel), which would require an array of 921,600 temporal arrays.
 - temporal ends (close to first frame, close to last frame) can be done in
   different ways (like image border when doing filters: use first/last frame for
   missing frames, extend missing frames to the other direction (currently using
@@ -57,13 +59,21 @@ Source code kept under revision control using Git.
 - pixel-channel with the max temporal range (temporal margin of 3)
 	i: 74, y: 164, x: 443, c: 2
 	[99, 119, 156, 159, 162, 162, 164]
+- problems:
+	- paper lacking in detailed explainations of formulas
+	- normalizing (cvNormalize() always threw an SEHException, added extra
+	  computation and memory), but do normalize in bilater filter so as not to
+	  lose as much information
+	- can't take advantage of temporal speed-up unless sacrifice memory
+	- progress bar wouldn't work even with BackgroundWorker
+	- can't compute std. dev. of temporal ranges on the fly
+	- ghosting
   
   
 -------
  TO DO
 -------
-- film a couple more videos (bad and good)
-- implement temporal speed up
+
 
 
 *******************************************************************************

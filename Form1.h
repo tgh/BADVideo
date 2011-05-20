@@ -317,15 +317,14 @@ namespace BADVideo {
         int temporalArrLen   = temporalMargin * 2 + 1;
         uchar* temporalArray = new uchar[temporalArrLen];
 
-        //an array to hold the final brightened and denoised values for each
-        // frame
+        //an array to hold the final brightened and denoised values per frame
         int imgArrLen   = videoHeight * videoWidth * 3;
         uchar* imgArray = new uchar[imgArrLen];
         
         unsigned int count    = 0; //how many values processed so far
         unsigned int sumRange = 0; //current sum of value ranges
-        unsigned int avgRange = 0xffffffff; //the average range of values per
-                                            // pixel channel across temporal plain
+        unsigned int avgRange = 0xffffffff; //average range of values per pixel
+                                            // channel across temporal plain
         unsigned int rangeCount = 0;
         unsigned int maxRange = 0;
 
