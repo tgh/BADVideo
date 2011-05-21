@@ -140,7 +140,7 @@ namespace BADVideo {
           //get the number of frames for the video
           // (subtract 1, because it seems the last frame is null, but is
           // included in the frame count)
-          numFrames = cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
+          numFrames = (int)cvGetCaptureProperty(videoCapture, CV_CAP_PROP_FRAME_COUNT) - 1;
 
           //reset original frames array
           if (originalFrames != nullptr) {
@@ -332,7 +332,7 @@ namespace BADVideo {
         enhancedFrames = new IplImage*[numFrames];
 
         //process each frame...
-        for (int i=0; i < numFrames; ++i) {
+        for (uchar i=0; i < numFrames; ++i) {
           //initialize start and end frames in the temporal plane
           int frameIndex = i - temporalMargin;
 
@@ -343,21 +343,21 @@ namespace BADVideo {
             frameIndex = numFrames - temporalMargin + i;
           }
 
-          int tempFrameIndex = frameIndex; //used to reset the frame index
+          uchar tempFrameIndex = frameIndex; //used to reset the frame index
 
           int imgIndex = 0;
           //process each row of the frame...
-          for (int y=0; y < videoHeight; ++y) {
+          for (short y=0; y < videoHeight; ++y) {
             //process each pixel in the row...
-            for (int x=0; x < videoWidth; ++x) {
+            for (short x=0; x < videoWidth; ++x) {
               //process each channel of the pixel...
-              for (int c=0; c < 3; ++c, ++imgIndex) {
+              for (uchar c=0; c < 3; ++c, ++imgIndex) {
                 int new_value;  //value with which the gain (brightness) will be applied
 
                 //get the values of this channel from the other frames within
                 // the temporal margin
                 frameIndex = tempFrameIndex;
-                for (int temporalIndex=0; temporalIndex < temporalArrLen; ++temporalIndex, ++frameIndex) {
+                for (uchar temporalIndex=0; temporalIndex < temporalArrLen; ++temporalIndex, ++frameIndex) {
                   //wrap around to first frame if necessary
                   if (frameIndex == numFrames)
                     frameIndex = 0;
@@ -366,13 +366,14 @@ namespace BADVideo {
                   //insert the value into the temporal values array in ascending order
                   insert(temporalArray, channelVal, 0, temporalIndex);
                 }
+
                 //calculate the range of the temporal values
                 unsigned int range = temporalArray[temporalArrLen-1] - temporalArray[0];
 
                 //range is greater than average (probably moving object), so use spatial bilateral filter
                 if (range > 0 && range > (unsigned int) (3*avgRange) && y >= kernel_radius
                     && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
-                    && rangeCount > videoWidth) {
+                    && rangeCount > (unsigned int)videoWidth) {
                   new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
                 }
                 //otherwise, use temporal median
@@ -392,7 +393,7 @@ namespace BADVideo {
                   }
                 }
                 //apply the brightness gain factor to the new value
-                new_value *= gain;
+                new_value = (int) (gain * (float)new_value);
                 if (new_value > 255) {
                   new_value = 255;
                 }
@@ -535,7 +536,8 @@ namespace BADVideo {
             //calculate intensity difference between neighbor value and center value
             double delta_r = abs(center_val - neighbor_val);
             //apply the bilateral filter formula
-            double calculation = exp(pow((double)(delta_d/sigma_d), 2)*(-0.5)) * exp(pow((double)(delta_r/sigma_r), 2)*(-0.5));
+            double calculation = (exp(pow((double)(delta_d/sigma_d), 2)*(-0.5)))
+                               * (exp(pow((double)(delta_r/sigma_r), 2)*(-0.5)));
             //update k and summation
             k += calculation;
             sum += calculation * neighbor_val;
