@@ -22,7 +22,7 @@ namespace BADVideo {
       textBox1->Text  = "200";
 			temporalMarginNumericUpDown->Minimum = 0;
       temporalMarginNumericUpDown->Maximum = maxFrames;
-      temporalMarginNumericUpDown->Value   = maxFrames/2;
+      temporalMarginNumericUpDown->Value   = maxFrames/2 + 1;
       kernelNumericUpDown->Value      =   3;
       kernelNumericUpDown->Minimum    =   0;
       kernelNumericUpDown->Maximum    =  10;
@@ -52,6 +52,10 @@ namespace BADVideo {
 
     int getKernelRadius() {
       return (int) kernelNumericUpDown->Value;
+    }
+
+    int getPsi() {
+      return Convert::ToInt32(listBox1->SelectedItem);
     }
 
 	protected:
@@ -88,6 +92,9 @@ namespace BADVideo {
   private: System::Windows::Forms::NumericUpDown^  intensityNumericUpDown;
 
   private: System::Windows::Forms::NumericUpDown^  spatialNumericUpDown;
+  private: System::Windows::Forms::Label^  label6;
+  private: System::Windows::Forms::ListBox^  listBox1;
+
 
 
   protected: 
@@ -107,6 +114,8 @@ namespace BADVideo {
 		{
       this->trackBar1 = (gcnew System::Windows::Forms::TrackBar());
       this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
+      this->listBox1 = (gcnew System::Windows::Forms::ListBox());
+      this->label6 = (gcnew System::Windows::Forms::Label());
       this->textBox1 = (gcnew System::Windows::Forms::TextBox());
       this->label3 = (gcnew System::Windows::Forms::Label());
       this->button1 = (gcnew System::Windows::Forms::Button());
@@ -146,15 +155,38 @@ namespace BADVideo {
       // 
       // groupBox1
       // 
+      this->groupBox1->Controls->Add(this->listBox1);
+      this->groupBox1->Controls->Add(this->label6);
       this->groupBox1->Controls->Add(this->textBox1);
       this->groupBox1->Controls->Add(this->label3);
       this->groupBox1->Controls->Add(this->trackBar1);
       this->groupBox1->Location = System::Drawing::Point(15, 211);
       this->groupBox1->Name = L"groupBox1";
-      this->groupBox1->Size = System::Drawing::Size(344, 93);
+      this->groupBox1->Size = System::Drawing::Size(344, 175);
       this->groupBox1->TabIndex = 2;
       this->groupBox1->TabStop = false;
       this->groupBox1->Text = L"Brightness";
+      // 
+      // listBox1
+      // 
+      this->listBox1->DisplayMember = L"Int";
+      this->listBox1->FormattingEnabled = true;
+      this->listBox1->Items->AddRange(gcnew cli::array< System::Object^  >(7) {L"16", L"32", L"64", L"128", L"256", L"1024", L"2048"});
+      this->listBox1->Location = System::Drawing::Point(260, 90);
+      this->listBox1->Name = L"listBox1";
+      this->listBox1->Size = System::Drawing::Size(70, 69);
+      this->listBox1->TabIndex = 7;
+      // 
+      // label6
+      // 
+      this->label6->AutoSize = true;
+      this->label6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+        static_cast<System::Byte>(0)));
+      this->label6->Location = System::Drawing::Point(223, 90);
+      this->label6->Name = L"label6";
+      this->label6->Size = System::Drawing::Size(31, 17);
+      this->label6->TabIndex = 6;
+      this->label6->Text = L"Psi:";
       // 
       // textBox1
       // 
@@ -180,7 +212,7 @@ namespace BADVideo {
       // button1
       // 
       this->button1->DialogResult = System::Windows::Forms::DialogResult::OK;
-      this->button1->Location = System::Drawing::Point(180, 330);
+      this->button1->Location = System::Drawing::Point(180, 406);
       this->button1->Name = L"button1";
       this->button1->Size = System::Drawing::Size(75, 23);
       this->button1->TabIndex = 3;
@@ -190,7 +222,7 @@ namespace BADVideo {
       // button2
       // 
       this->button2->DialogResult = System::Windows::Forms::DialogResult::Cancel;
-      this->button2->Location = System::Drawing::Point(275, 330);
+      this->button2->Location = System::Drawing::Point(275, 406);
       this->button2->Name = L"button2";
       this->button2->Size = System::Drawing::Size(75, 23);
       this->button2->TabIndex = 4;
@@ -303,7 +335,7 @@ namespace BADVideo {
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
       this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-      this->ClientSize = System::Drawing::Size(371, 370);
+      this->ClientSize = System::Drawing::Size(371, 443);
       this->Controls->Add(this->groupBox3);
       this->Controls->Add(this->groupBox2);
       this->Controls->Add(this->button2);
