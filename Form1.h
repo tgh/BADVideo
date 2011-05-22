@@ -5,6 +5,8 @@
 #include <highgui.h>
 #include "EnhanceForm.h"
 
+#define PI 3.1415926f
+
 namespace BADVideo {
 
 	using namespace System;
@@ -255,7 +257,7 @@ namespace BADVideo {
         }
 
         //create the Enhance dialog window
-        EnhanceForm^ eForm = gcnew EnhanceForm(numFrames/10);
+        EnhanceForm^ eForm = gcnew EnhanceForm(5);
         //open the Enhance dialog
         System::Windows::Forms::DialogResult dr = eForm->ShowDialog();
         //user clicked Cancel, get out
@@ -269,9 +271,14 @@ namespace BADVideo {
         int sigma_d = eForm->getSigmaD();
         int sigma_r = eForm->getSigmaR();
         int kernel_radius = eForm->getKernelRadius();
-        float gain = (float) gainFactor / (float) 100.0;
+        double psi  = eForm->getPsi();
+        if (psi == 0.0) {
+          MessageBox::Show("You must select a value for psi.", "Oops...");
+          return;
+        }
+        double gain = (double) gainFactor / (double) 100.0;
 
-        brightenAndDenoise(temporalMargin, kernel_radius, sigma_d, sigma_r, gain);
+        brightenAndDenoise(temporalMargin, kernel_radius, sigma_d, sigma_r, gain, psi);
         MessageBox::Show("Done.");
       }// ENHANCE
       
@@ -301,6 +308,7 @@ namespace BADVideo {
           }
           //cleanup
           cvReleaseVideoWriter(&writer);
+          MessageBox::Show("File saved.", "Save");
         }
 
       }// SAVE
@@ -312,7 +320,7 @@ namespace BADVideo {
       ///<summary>
       ///
       ///</summary>
-      void brightenAndDenoise(int temporalMargin, int kernel_radius, int sigma_d, int sigma_r, float gain) {
+      void brightenAndDenoise(int temporalMargin, int kernel_radius, int sigma_d, int sigma_r, double gain, double psi) {
         //an array to hold the pixel channel values across the temporal plain
         int temporalArrLen   = temporalMargin * 2 + 1;
         uchar* temporalArray = new uchar[temporalArrLen];
@@ -352,7 +360,7 @@ namespace BADVideo {
             for (short x=0; x < videoWidth; ++x) {
               //process each channel of the pixel...
               for (uchar c=0; c < 3; ++c, ++imgIndex) {
-                int new_value;  //value with which the gain (brightness) will be applied
+                //int new_value;  //value with which the gain (brightness) will be applied
 
                 //get the values of this channel from the other frames within
                 // the temporal margin
@@ -366,12 +374,12 @@ namespace BADVideo {
                   //insert the value into the temporal values array in ascending order
                   insert(temporalArray, channelVal, 0, temporalIndex);
                 }
-
+                /*
                 //calculate the range of the temporal values
                 unsigned int range = temporalArray[temporalArrLen-1] - temporalArray[0];
 
                 //range is greater than average (probably moving object), so use spatial bilateral filter
-                if (range > 0 && range > (unsigned int) (3*avgRange) && y >= kernel_radius
+                if (range > 0 && range > (unsigned int) (2*avgRange) && y >= kernel_radius
                     && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
                     && rangeCount > (unsigned int)videoWidth) {
                   new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
@@ -399,6 +407,8 @@ namespace BADVideo {
                 }
 
                 imgArray[imgIndex] = (uchar) new_value;
+                */
+                imgArray[imgIndex] = calcMedian(temporalArray, temporalArrLen);
               }
             }
           }
@@ -406,9 +416,36 @@ namespace BADVideo {
           //create a new image with the brightened and denoised values
           cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
           IplImage* temp = new IplImage(mat);
-          //copy this image to the global result image array
-          enhancedFrames[i] = cvCloneImage(temp);
+
+          imgIndex = 0;
+
+          for (short y=0; y < videoHeight; ++y) {
+            for (short x=0; x < videoWidth; ++x) {
+              for (uchar c=0; c < 3; ++c) {
+                int new_val = bilateralFilter(temp, y, x, c, kernel_radius, sigma_d, sigma_r);
+                //double gain2 = (sin((double)((new_val*PI/255)-(PI/2)))+1)*((gain-1)/2) + 1;
+                double gain2 = (double) (log((double)(((double)new_val/(double)255.0)*(double)(psi-1.0)))
+                                        / log((double)psi))
+                                        * gain;
+                if (gain2 < (double)0.0)
+                  gain2 = 0.0;
+                if (i == 40 && y == 200 && x == 200)
+                  MessageBox::Show("" + gain2);
+                new_val = (int) (gain2 * (double)new_val);
+                if (new_val > 255)
+                  new_val = 255;
+                imgArray[imgIndex++] = new_val;
+              }
+            }
+          }
+
           delete temp;
+          cv::Mat mat2(videoHeight, videoWidth, CV_8UC3, imgArray);
+          IplImage* temp2 = new IplImage(mat2);
+
+          //copy this image to the global result image array
+          enhancedFrames[i] = cvCloneImage(temp2);
+          delete temp2;
         }
         delete imgArray;
         delete temporalArray;
@@ -522,10 +559,24 @@ namespace BADVideo {
         uchar* cntPtr = (uchar*) img->imageData + y * img->widthStep;
         double center_val = (double)cntPtr[x*3+c];
 
+        int row_start = y-k_radius;
+        int row_end   = y+k_radius;
+        int col_start = x-k_radius;
+        int col_end   = x+k_radius;
+
+        if (row_start < 0)
+          row_start = 0;
+        else if (row_end >= videoHeight)
+          row_end = videoHeight;
+        if (col_start < 0)
+          col_start = 0;
+        else if (col_end >= videoWidth)
+          col_end = videoWidth;
+
         //for each neighbor of the center...
-        for (int row = y-k_radius; row <= y+k_radius; ++row) {
+        for (int row = row_start; row <= row_end; ++row) {
           uchar* ptr = (uchar*) (img->imageData + row * img->widthStep);
-          for (int col = x-k_radius; col <= x+k_radius; ++col) {
+          for (int col = col_start; col <= col_end; ++col) {
             //grab the neighbor's channel value
             double neighbor_val = (double)ptr[col*3+c];
             //skip over the center pixel

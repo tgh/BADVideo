@@ -68,6 +68,11 @@ Source code kept under revision control using Git.
 	- progress bar wouldn't work even with BackgroundWorker
 	- can't compute std. dev. of temporal ranges on the fly
 	- ghosting
+	- execution time
+- just bilateral filtering the images (and brightening) still had noise, just at
+  a higher granularity.  Temporal median alone (and brightening) had distinct
+  banding and slight ghosting.  Both temporal mediam and bilateral filter (of
+  whole image) produced best results.
   
   
 -------
