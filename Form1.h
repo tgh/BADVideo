@@ -429,8 +429,6 @@ namespace BADVideo {
                                         * gain;
                 if (gain2 < (double)0.0)
                   gain2 = 0.0;
-                if (i == 40 && y == 200 && x == 200)
-                  MessageBox::Show("" + gain2);
                 new_val = (int) (gain2 * (double)new_val);
                 if (new_val > 255)
                   new_val = 255;
