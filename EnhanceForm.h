@@ -171,7 +171,8 @@ namespace BADVideo {
       // 
       this->listBox1->DisplayMember = L"Int";
       this->listBox1->FormattingEnabled = true;
-      this->listBox1->Items->AddRange(gcnew cli::array< System::Object^  >(7) {L"16", L"32", L"64", L"128", L"256", L"1024", L"2048"});
+      this->listBox1->Items->AddRange(gcnew cli::array< System::Object^  >(8) {L"16", L"32", L"64", L"128", L"256", L"512", L"1024", 
+        L"2048"});
       this->listBox1->Location = System::Drawing::Point(260, 90);
       this->listBox1->Name = L"listBox1";
       this->listBox1->Size = System::Drawing::Size(70, 69);
