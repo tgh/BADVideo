@@ -18,8 +18,8 @@ namespace BADVideo {
 		EnhanceForm(int maxFrames)
 		{
 			InitializeComponent();
-      trackBar1->Value = 200;
-      textBox1->Text  = "200";
+      trackBar1->Value = 300;
+      textBox1->Text  = "300";
 			temporalMarginNumericUpDown->Minimum = 0;
       temporalMarginNumericUpDown->Maximum = maxFrames;
       temporalMarginNumericUpDown->Value   = maxFrames/2 + 1;
@@ -143,14 +143,14 @@ namespace BADVideo {
       this->label2 = (gcnew System::Windows::Forms::Label());
       this->temporalMarginNumericUpDown = (gcnew System::Windows::Forms::NumericUpDown());
       this->groupBox3 = (gcnew System::Windows::Forms::GroupBox());
+      this->label8 = (gcnew System::Windows::Forms::Label());
+      this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
       this->intensityNumericUpDown = (gcnew System::Windows::Forms::NumericUpDown());
       this->spatialNumericUpDown = (gcnew System::Windows::Forms::NumericUpDown());
       this->label5 = (gcnew System::Windows::Forms::Label());
       this->label4 = (gcnew System::Windows::Forms::Label());
       this->kernelNumericUpDown = (gcnew System::Windows::Forms::NumericUpDown());
       this->label1 = (gcnew System::Windows::Forms::Label());
-      this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
-      this->label8 = (gcnew System::Windows::Forms::Label());
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBar1))->BeginInit();
       this->groupBox1->SuspendLayout();
       this->groupBox2->SuspendLayout();
@@ -164,12 +164,12 @@ namespace BADVideo {
       // 
       // trackBar1
       // 
-      this->trackBar1->LargeChange = 100;
+      this->trackBar1->LargeChange = 50;
       this->trackBar1->Location = System::Drawing::Point(6, 42);
-      this->trackBar1->Maximum = 500;
+      this->trackBar1->Maximum = 700;
       this->trackBar1->Name = L"trackBar1";
       this->trackBar1->Size = System::Drawing::Size(324, 45);
-      this->trackBar1->SmallChange = 50;
+      this->trackBar1->SmallChange = 10;
       this->trackBar1->TabIndex = 1;
       this->trackBar1->TickFrequency = 10;
       this->trackBar1->TickStyle = System::Windows::Forms::TickStyle::TopLeft;
@@ -320,6 +320,28 @@ namespace BADVideo {
       this->groupBox3->TabStop = false;
       this->groupBox3->Text = L"Space";
       // 
+      // label8
+      // 
+      this->label8->AutoSize = true;
+      this->label8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+        static_cast<System::Byte>(0)));
+      this->label8->Location = System::Drawing::Point(45, 106);
+      this->label8->Name = L"label8";
+      this->label8->Size = System::Drawing::Size(227, 17);
+      this->label8->TabIndex = 7;
+      this->label8->Text = L"Run a full frame bilateral filter pass";
+      // 
+      // checkBox1
+      // 
+      this->checkBox1->AutoSize = true;
+      this->checkBox1->Checked = true;
+      this->checkBox1->CheckState = System::Windows::Forms::CheckState::Checked;
+      this->checkBox1->Location = System::Drawing::Point(283, 109);
+      this->checkBox1->Name = L"checkBox1";
+      this->checkBox1->Size = System::Drawing::Size(15, 14);
+      this->checkBox1->TabIndex = 6;
+      this->checkBox1->UseVisualStyleBackColor = true;
+      // 
       // intensityNumericUpDown
       // 
       this->intensityNumericUpDown->Location = System::Drawing::Point(283, 79);
@@ -377,28 +399,6 @@ namespace BADVideo {
       this->label1->TabIndex = 0;
       this->label1->Text = L"Kernel radius:";
       // 
-      // checkBox1
-      // 
-      this->checkBox1->AutoSize = true;
-      this->checkBox1->Checked = true;
-      this->checkBox1->CheckState = System::Windows::Forms::CheckState::Checked;
-      this->checkBox1->Location = System::Drawing::Point(283, 109);
-      this->checkBox1->Name = L"checkBox1";
-      this->checkBox1->Size = System::Drawing::Size(15, 14);
-      this->checkBox1->TabIndex = 6;
-      this->checkBox1->UseVisualStyleBackColor = true;
-      // 
-      // label8
-      // 
-      this->label8->AutoSize = true;
-      this->label8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
-        static_cast<System::Byte>(0)));
-      this->label8->Location = System::Drawing::Point(45, 106);
-      this->label8->Name = L"label8";
-      this->label8->Size = System::Drawing::Size(227, 17);
-      this->label8->TabIndex = 7;
-      this->label8->Text = L"Run a full frame bilateral filter pass";
-      // 
       // EnhanceForm
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -440,9 +440,9 @@ private: System::Void textBox1_TextChanged(System::Object^  sender, System::Even
            catch (FormatException^ fe) {
              textBox1->Text = "0";
            }
-           if (val > 500) {
-             textBox1->Text = "500";
-             trackBar1->Value = 500;
+           if (val > 700) {
+             textBox1->Text = "700";
+             trackBar1->Value = 700;
            }
            else if (val < 0) {
              textBox1->Text = "0";
