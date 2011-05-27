@@ -271,6 +271,8 @@ namespace BADVideo {
         int sigma_d = eForm->getSigmaD();
         int sigma_r = eForm->getSigmaR();
         int kernel_radius = eForm->getKernelRadius();
+        int threshold = eForm->getThreshold();
+        bool pass2 = eForm->getSecondPass();
         double psi  = eForm->getPsi();
         if (psi == 0.0) {
           MessageBox::Show("You must select a value for psi.", "Oops...");
@@ -278,7 +280,7 @@ namespace BADVideo {
         }
         double gain = (double) gainFactor / (double) 100.0;
 
-        brightenAndDenoise(temporalMargin, kernel_radius, sigma_d, sigma_r, gain, psi);
+        brightenAndDenoise(temporalMargin, threshold, kernel_radius, sigma_d, sigma_r, pass2, gain, psi);
         MessageBox::Show("Done.");
       }// ENHANCE
       
@@ -320,7 +322,8 @@ namespace BADVideo {
       ///<summary>
       ///
       ///</summary>
-      void brightenAndDenoise(int temporalMargin, int kernel_radius, int sigma_d, int sigma_r, double gain, double psi) {
+      void brightenAndDenoise(int temporalMargin, int threshold, int kernel_radius, int sigma_d,
+                              int sigma_r, bool pass2, double gain, double psi) {
         //an array to hold the pixel channel values across the temporal plain
         int temporalArrLen   = temporalMargin * 2 + 1;
         uchar* temporalArray = new uchar[temporalArrLen];
@@ -360,7 +363,7 @@ namespace BADVideo {
             for (short x=0; x < videoWidth; ++x) {
               //process each channel of the pixel...
               for (uchar c=0; c < 3; ++c, ++imgIndex) {
-                //int new_value;  //value with which the gain (brightness) will be applied
+                int new_value;  //value with which the gain (brightness) will be applied
 
                 //get the values of this channel from the other frames within
                 // the temporal margin
@@ -374,24 +377,29 @@ namespace BADVideo {
                   //insert the value into the temporal values array in ascending order
                   insert(temporalArray, channelVal, 0, temporalIndex);
                 }
-                /*
+                
                 //calculate the range of the temporal values
                 unsigned int range = temporalArray[temporalArrLen-1] - temporalArray[0];
 
                 //range is greater than average (probably moving object), so use spatial bilateral filter
+                /*
                 if (range > 0 && range > (unsigned int) (2*avgRange) && y >= kernel_radius
                     && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
                     && rangeCount > (unsigned int)videoWidth) {
                   new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
                 }
+                */
+                if (range > (unsigned int) threshold) {
+                  new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
+                }
                 //otherwise, use temporal median
                 else {
                   if (range != 0) {
-                    ++rangeCount;
+                    //++rangeCount;
                     //update the average temporal value range
-                    sumRange += range;
-                    ++count;
-                    avgRange = (unsigned int) (sumRange / count);
+                    //sumRange += range;
+                    //++count;
+                    //avgRange = (unsigned int) (sumRange / count);
 
                     //calculate the median of the temporal values
                     new_value = (int) calcMedian(temporalArray, temporalArrLen);
@@ -400,44 +408,58 @@ namespace BADVideo {
                     new_value = (int) temporalArray[0];
                   }
                 }
+                /*
                 //apply the brightness gain factor to the new value
                 new_value = (int) (gain * (float)new_value);
                 if (new_value > 255) {
                   new_value = 255;
                 }
-
-                imgArray[imgIndex] = (uchar) new_value;
                 */
-                imgArray[imgIndex] = calcMedian(temporalArray, temporalArrLen);
-              }
-            }
-          }
-
-          //create a new image with the brightened and denoised values
-          cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
-          IplImage* temp = new IplImage(mat);
-
-          imgIndex = 0;
-
-          for (short y=0; y < videoHeight; ++y) {
-            for (short x=0; x < videoWidth; ++x) {
-              for (uchar c=0; c < 3; ++c) {
-                int new_val = bilateralFilter(temp, y, x, c, kernel_radius, sigma_d, sigma_r);
-                //double gain2 = (sin((double)((new_val*PI/255)-(PI/2)))+1)*((gain-1)/2) + 1;
-                double gain2 = (double) (log((double)(((double)new_val/(double)255.0)*(double)(psi-1.0)))
-                                        / log((double)psi))
-                                        * gain;
+                double gain2 = (double) (log((double)(((double)new_value/(double)255.0)*(double)(psi-1.0)))
+                                          / log((double)psi))
+                                          * gain;
                 if (gain2 < (double)0.0)
                   gain2 = 0.0;
-                new_val = (int) (gain2 * (double)new_val);
-                if (new_val > 255)
-                  new_val = 255;
-                imgArray[imgIndex++] = new_val;
+                new_value = (int) (gain2 * (double)new_value);
+                if (new_value > 255)
+                  new_value = 255;
+
+                imgArray[imgIndex] = (uchar) new_value;
+                
+                //imgArray[imgIndex] = calcMedian(temporalArray, temporalArrLen);
               }
             }
           }
 
-          delete temp;
+          if (pass2) {
+            //create a new image with the brightened and denoised values
+            cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
+            IplImage* temp = new IplImage(mat);
+
+            imgIndex = 0;
+
+            for (short y=0; y < videoHeight; ++y) {
+              for (short x=0; x < videoWidth; ++x) {
+                for (uchar c=0; c < 3; ++c) {
+                  int new_val = bilateralFilter(temp, y, x, c, kernel_radius, sigma_d, sigma_r);
+                  //double gain2 = (sin((double)((new_val*PI/255)-(PI/2)))+1)*((gain-1)/2) + 1;
+                  /*
+                  double gain2 = (double) (log((double)(((double)new_val/(double)255.0)*(double)(psi-1.0)))
+                                          / log((double)psi))
+                                          * gain;
+                  if (gain2 < (double)0.0)
+                    gain2 = 0.0;
+                  new_val = (int) (gain2 * (double)new_val);
+                  if (new_val > 255)
+                    new_val = 255;
+                    */
+                  imgArray[imgIndex++] = new_val;
+                }
+              }
+            }
+
+            delete temp;
+          }
           cv::Mat mat2(videoHeight, videoWidth, CV_8UC3, imgArray);
           IplImage* temp2 = new IplImage(mat2);
 

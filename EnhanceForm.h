@@ -59,6 +59,16 @@ namespace BADVideo {
       return Convert::ToInt32(listBox1->SelectedItem);
     }
 
+    int getThreshold() {
+      return (int) rangeNumericUpDown->Value;
+    }
+
+    bool getSecondPass() {
+      if (checkBox1->CheckState == CheckState::Checked)
+        return true;
+      return false;
+    }
+
 	protected:
 		/// <summary>
 		/// Clean up any resources being used.
@@ -99,6 +109,8 @@ namespace BADVideo {
 
 
   private: System::Windows::Forms::Label^  label7;
+  private: System::Windows::Forms::Label^  label8;
+  private: System::Windows::Forms::CheckBox^  checkBox1;
 
 
 
@@ -137,6 +149,8 @@ namespace BADVideo {
       this->label4 = (gcnew System::Windows::Forms::Label());
       this->kernelNumericUpDown = (gcnew System::Windows::Forms::NumericUpDown());
       this->label1 = (gcnew System::Windows::Forms::Label());
+      this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
+      this->label8 = (gcnew System::Windows::Forms::Label());
       (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBar1))->BeginInit();
       this->groupBox1->SuspendLayout();
       this->groupBox2->SuspendLayout();
@@ -168,7 +182,7 @@ namespace BADVideo {
       this->groupBox1->Controls->Add(this->textBox1);
       this->groupBox1->Controls->Add(this->label3);
       this->groupBox1->Controls->Add(this->trackBar1);
-      this->groupBox1->Location = System::Drawing::Point(15, 256);
+      this->groupBox1->Location = System::Drawing::Point(15, 281);
       this->groupBox1->Name = L"groupBox1";
       this->groupBox1->Size = System::Drawing::Size(344, 175);
       this->groupBox1->TabIndex = 2;
@@ -221,7 +235,7 @@ namespace BADVideo {
       // button1
       // 
       this->button1->DialogResult = System::Windows::Forms::DialogResult::OK;
-      this->button1->Location = System::Drawing::Point(180, 451);
+      this->button1->Location = System::Drawing::Point(180, 476);
       this->button1->Name = L"button1";
       this->button1->Size = System::Drawing::Size(75, 23);
       this->button1->TabIndex = 3;
@@ -231,7 +245,7 @@ namespace BADVideo {
       // button2
       // 
       this->button2->DialogResult = System::Windows::Forms::DialogResult::Cancel;
-      this->button2->Location = System::Drawing::Point(275, 451);
+      this->button2->Location = System::Drawing::Point(275, 476);
       this->button2->Name = L"button2";
       this->button2->Size = System::Drawing::Size(75, 23);
       this->button2->TabIndex = 4;
@@ -291,6 +305,8 @@ namespace BADVideo {
       // 
       // groupBox3
       // 
+      this->groupBox3->Controls->Add(this->label8);
+      this->groupBox3->Controls->Add(this->checkBox1);
       this->groupBox3->Controls->Add(this->intensityNumericUpDown);
       this->groupBox3->Controls->Add(this->spatialNumericUpDown);
       this->groupBox3->Controls->Add(this->label5);
@@ -299,7 +315,7 @@ namespace BADVideo {
       this->groupBox3->Controls->Add(this->label1);
       this->groupBox3->Location = System::Drawing::Point(15, 125);
       this->groupBox3->Name = L"groupBox3";
-      this->groupBox3->Size = System::Drawing::Size(344, 111);
+      this->groupBox3->Size = System::Drawing::Size(344, 138);
       this->groupBox3->TabIndex = 6;
       this->groupBox3->TabStop = false;
       this->groupBox3->Text = L"Space";
@@ -361,11 +377,33 @@ namespace BADVideo {
       this->label1->TabIndex = 0;
       this->label1->Text = L"Kernel radius:";
       // 
+      // checkBox1
+      // 
+      this->checkBox1->AutoSize = true;
+      this->checkBox1->Checked = true;
+      this->checkBox1->CheckState = System::Windows::Forms::CheckState::Checked;
+      this->checkBox1->Location = System::Drawing::Point(283, 109);
+      this->checkBox1->Name = L"checkBox1";
+      this->checkBox1->Size = System::Drawing::Size(15, 14);
+      this->checkBox1->TabIndex = 6;
+      this->checkBox1->UseVisualStyleBackColor = true;
+      // 
+      // label8
+      // 
+      this->label8->AutoSize = true;
+      this->label8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+        static_cast<System::Byte>(0)));
+      this->label8->Location = System::Drawing::Point(45, 106);
+      this->label8->Name = L"label8";
+      this->label8->Size = System::Drawing::Size(227, 17);
+      this->label8->TabIndex = 7;
+      this->label8->Text = L"Run a full frame bilateral filter pass";
+      // 
       // EnhanceForm
       // 
       this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
       this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-      this->ClientSize = System::Drawing::Size(371, 492);
+      this->ClientSize = System::Drawing::Size(371, 517);
       this->Controls->Add(this->groupBox3);
       this->Controls->Add(this->groupBox2);
       this->Controls->Add(this->button2);
