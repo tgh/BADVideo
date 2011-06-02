@@ -1,0 +1,9 @@
+*.vcxproj*
+Debug/
+*.txt
+*.ico
+*.rc
+Release/
+*.mpg
+cs510_Computational_Photography/
+*.resx

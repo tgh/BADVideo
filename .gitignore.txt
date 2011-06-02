@@ -1,5 +1,0 @@
-*.vcxproj*
-Debug/
-*.txt
-*.ico
-*.rc
