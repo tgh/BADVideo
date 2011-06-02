@@ -18,6 +18,8 @@ namespace BADVideo {
 		EnhanceForm(int maxFrames)
 		{
 			InitializeComponent();
+
+      //initialize all parameters to arbitrary values
       trackBar1->Value = 300;
       textBox1->Text  = "300";
 			temporalMarginNumericUpDown->Minimum = 0;
@@ -34,6 +36,8 @@ namespace BADVideo {
       intensityNumericUpDown->Maximum =  50;
       rangeNumericUpDown->Value       =  30;
 		}
+
+    /* Getters for the user's input */
 
     int getGainValue() {
       return (int) trackBar1->Value;
@@ -429,28 +433,38 @@ namespace BADVideo {
 
     }
 #pragma endregion
-  private: System::Void trackBar1_Scroll(System::Object^  sender, System::EventArgs^  e) {
+  private:
+           ///<summary>
+           ///Display the value of the track bar as it is moved around.
+           ///</summary>
+           System::Void trackBar1_Scroll(System::Object^  sender, System::EventArgs^  e) {
              textBox1->Text = "" + trackBar1->Value;
            }
-private: System::Void textBox1_TextChanged(System::Object^  sender, System::EventArgs^  e) {
-           int val = 0;
-           try {
-            val = Convert::ToInt32(textBox1->Text);
+
+
+           ///<summary>
+           ///Ensures that the value entered into the text box for the
+           /// brightness does not exceed the maximum value.
+           ///</summary>
+           System::Void textBox1_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+             int val = 0;
+             try {
+              val = Convert::ToInt32(textBox1->Text);
+             }
+             catch (FormatException^ fe) {
+               textBox1->Text = "0";
+             }
+             if (val > 700) {
+               textBox1->Text = "700";
+               trackBar1->Value = 700;
+             }
+             else if (val < 0) {
+               textBox1->Text = "0";
+               trackBar1->Value = 0;
+             }
+             else {
+               trackBar1->Value = val;
+             }
            }
-           catch (FormatException^ fe) {
-             textBox1->Text = "0";
-           }
-           if (val > 700) {
-             textBox1->Text = "700";
-             trackBar1->Value = 700;
-           }
-           else if (val < 0) {
-             textBox1->Text = "0";
-             trackBar1->Value = 0;
-           }
-           else {
-             trackBar1->Value = val;
-           }
-         }
 };
 }
