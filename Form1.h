@@ -5,8 +5,6 @@
 #include <highgui.h>
 #include "EnhanceForm.h"
 
-#define PI 3.1415926f
-
 namespace BADVideo {
 
 	using namespace System;
@@ -280,8 +278,13 @@ namespace BADVideo {
         }
         double gain = (double) gainFactor / (double) 100.0;
 
+        System::DateTime start = System::DateTime::Now;
+
         brightenAndDenoise(temporalMargin, threshold, kernel_radius, sigma_d, sigma_r, pass2, gain, psi);
-        MessageBox::Show("Done.");
+
+        System::DateTime end = System::DateTime::Now;
+
+        MessageBox::Show("Done.\nTime: " + end.Subtract(start).ToString() + "\nFrames: " + numFrames);
       }// ENHANCE
       
 
