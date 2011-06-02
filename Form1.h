@@ -278,13 +278,9 @@ namespace BADVideo {
         }
         double gain = (double) gainFactor / (double) 100.0;
 
-        System::DateTime start = System::DateTime::Now;
-
         brightenAndDenoise(temporalMargin, threshold, kernel_radius, sigma_d, sigma_r, pass2, gain, psi);
 
-        System::DateTime end = System::DateTime::Now;
-
-        MessageBox::Show("Done.\nTime: " + end.Subtract(start).ToString() + "\nFrames: " + numFrames);
+        MessageBox::Show("Done.");
       }// ENHANCE
       
 
@@ -323,7 +319,16 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Enhances the opened video.  This method is based on the idea in the
+      /// SIGGRAPH 2005 paper "Video Enhancement Using Per-Pixel Virtual
+      /// Exposures" by Bennett and McMillan.  It's purpose is to make
+      /// underexposed videos appear correctly exposed and void of noise.
+      /// It does so by taking the median of temporal values per pixel from
+      /// frames before and after the frame of interest, or just appliying a
+      /// bilateral filter to the pixel of interest if there is motion present
+      /// at that pixel.  Then a gain factor is calculated and multiplied to
+      /// the new filtered values.  Then, if the pass2 argument is true, a
+      /// second bilateral filter pass is applied to the whole video cube.
       ///</summary>
       void brightenAndDenoise(int temporalMargin, int threshold, int kernel_radius, int sigma_d,
                               int sigma_r, bool pass2, double gain, double psi) {
@@ -380,60 +385,39 @@ namespace BADVideo {
                   //insert the value into the temporal values array in ascending order
                   insert(temporalArray, channelVal, 0, temporalIndex);
                 }
-                
+
                 //calculate the range of the temporal values
                 unsigned int range = temporalArray[temporalArrLen-1] - temporalArray[0];
-
-                //range is greater than average (probably moving object), so use spatial bilateral filter
-                /*
-                if (range > 0 && range > (unsigned int) (2*avgRange) && y >= kernel_radius
-                    && y < videoHeight-kernel_radius && x >= kernel_radius && x < videoWidth-kernel_radius
-                    && rangeCount > (unsigned int)videoWidth) {
-                  new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
-                }
-                */
+                //motion might be present, so apply a bilateral filter
                 if (range > (unsigned int) threshold) {
                   new_value = (int) bilateralFilter(originalFrames[i], y, x, c, kernel_radius, sigma_d, sigma_r);
                 }
                 //otherwise, use temporal median
                 else {
-                  if (range != 0) {
-                    //++rangeCount;
-                    //update the average temporal value range
-                    //sumRange += range;
-                    //++count;
-                    //avgRange = (unsigned int) (sumRange / count);
-
-                    //calculate the median of the temporal values
+                  if (range != 0)
                     new_value = (int) calcMedian(temporalArray, temporalArrLen);
-                  }
-                  else {
+                  else
                     new_value = (int) temporalArray[0];
-                  }
                 }
-                /*
-                //apply the brightness gain factor to the new value
-                new_value = (int) (gain * (float)new_value);
-                if (new_value > 255) {
-                  new_value = 255;
-                }
-                */
+                //calulcate the gain multiplier
                 double gain2 = (double) (log((double)(((double)new_value/(double)255.0)*(double)(psi-1.0)))
                                           / log((double)psi))
                                           * gain;
+                //make sure gain is not negative
                 if (gain2 < (double)0.0)
                   gain2 = 0.0;
+                //multiply the new value by the gain factor to emulate a better exposure
                 new_value = (int) (gain2 * (double)new_value);
+                //cap the value at 255, of course
                 if (new_value > 255)
                   new_value = 255;
-
+                //store this value into the image array
                 imgArray[imgIndex] = (uchar) new_value;
-                
-                //imgArray[imgIndex] = calcMedian(temporalArray, temporalArrLen);
               }
             }
           }
 
+          //apply the second pass of a bilateral filter to the filtered image
           if (pass2) {
             //create a new image with the brightened and denoised values
             cv::Mat mat(videoHeight, videoWidth, CV_8UC3, imgArray);
@@ -441,28 +425,18 @@ namespace BADVideo {
 
             imgIndex = 0;
 
+            //apply the bilateral filter per pixel per channel
             for (short y=0; y < videoHeight; ++y) {
               for (short x=0; x < videoWidth; ++x) {
                 for (uchar c=0; c < 3; ++c) {
                   int new_val = bilateralFilter(temp, y, x, c, kernel_radius, sigma_d, sigma_r);
-                  //double gain2 = (sin((double)((new_val*PI/255)-(PI/2)))+1)*((gain-1)/2) + 1;
-                  /*
-                  double gain2 = (double) (log((double)(((double)new_val/(double)255.0)*(double)(psi-1.0)))
-                                          / log((double)psi))
-                                          * gain;
-                  if (gain2 < (double)0.0)
-                    gain2 = 0.0;
-                  new_val = (int) (gain2 * (double)new_val);
-                  if (new_val > 255)
-                    new_val = 255;
-                    */
                   imgArray[imgIndex++] = new_val;
                 }
               }
             }
-
             delete temp;
           }
+          //create a new image with the final enhanced values
           cv::Mat mat2(videoHeight, videoWidth, CV_8UC3, imgArray);
           IplImage* temp2 = new IplImage(mat2);
 
@@ -479,7 +453,8 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Gets the intensity value (0-255) of an image at a specific pixel and
+      /// channel.
       ///<\summary>
       uchar getValue(IplImage* img, int y, int x, int c) {
         uchar* ptr = (uchar*) (img->imageData + y * img->widthStep);
@@ -491,7 +466,7 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Calculates the average of an array of unsigned chars, given the length
       ///</summary>
       uchar calcAverage(uchar* arr, int len) {
         int sum = 0;
@@ -506,7 +481,8 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Inserts an unsigned char into the given array of unsigned chars in
+      /// ascending order.
       ///</summary>
       void insert(uchar* arr, uchar val, int start, int stop) {
         for(int i=start; i <= stop; ++i) {
@@ -528,7 +504,7 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Calculates the median of an array of unsigned chars.
       ///</summary>
       uchar calcMedian(uchar* arr, int len) {
         int i = len/2;
@@ -544,7 +520,7 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Median filter--an edge-preserving smoothing filter.
       ///</summary>
       uchar medianFilter(IplImage* img, int y, int x, int c, int k_radius) {
         int len = (k_radius*2+1) * (k_radius*2+1);
@@ -572,13 +548,13 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Bilateral filter--an edge-preserving smoothing filter.
       ///</summary>
       uchar bilateralFilter(IplImage* img, int y, int x, int c, int k_radius, int sigma_d, int sigma_r) {
         double k   = 0.0;  //the k(x) value in the bilateral filter formula
         double sum = 0.0;  //the summation in the bilatral filter formula
 
-        //get the (normalized) value of the image's pixel's channel of interest
+        //get the value of the image's pixel's channel of interest
         uchar* cntPtr = (uchar*) img->imageData + y * img->widthStep;
         double center_val = (double)cntPtr[x*3+c];
 
@@ -626,7 +602,7 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Caclulates the euclidean distance between 2 points in a 2D space.
       ///</summary>
       inline double euclideanDistance(int y1, int x1, int y2, int x2) {
         return sqrt((double)(pow((double)(x2-x1),2)+pow((double)(y2-y1),2)));
@@ -637,7 +613,7 @@ namespace BADVideo {
 
 
       ///<summary>
-      ///
+      ///Rounds the given number appropriately.
       ///</summary>
       inline double round(double x) {
         return ((x - floor(x)) >= 0.5) ? ceil(x) : floor(x);
