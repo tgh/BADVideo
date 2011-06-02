@@ -1,3 +1,10 @@
+///---------------------------------------------------------------------------
+/// This code provides the main window and main funcitonality of BADVideo.
+///
+/// Author: Tyler Hayes, Portland State University, Spring 2011
+///   File: Form1.h
+///---------------------------------------------------------------------------
+
 #pragma once
 
 #include <stdlib.h>

@@ -1,3 +1,11 @@
+///---------------------------------------------------------------------------
+/// This code provides the Enhance window of BADVideo, where the user gets to
+/// define the parameters involved in enhancing the underexposed video.
+///
+/// Author: Tyler Hayes, Portland State University, Spring 2011
+///   File: EnhanceForm.h
+///---------------------------------------------------------------------------
+
 #pragma once
 
 namespace BADVideo {
